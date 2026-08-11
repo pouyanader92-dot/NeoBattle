@@ -248,15 +248,26 @@ async function doAuth() {
 }
 
 async function fetchDb() {
-    const res = await fetch('/api/db');
-    dbData = await res.json();
-    if(!dbData.users) dbData.users = [];
-    if(!dbData.lobbies) dbData.lobbies = [];
-    if(!dbData.matches) dbData.matches = [];
+    try {
+        const res = await fetch('/api/db');
+        if(!res.ok) throw new Error('Server error');
+        dbData = await res.json();
+        if(!dbData.users) dbData.users = [];
+        if(!dbData.lobbies) dbData.lobbies = [];
+        if(!dbData.matches) dbData.matches = [];
+    } catch (e) {
+        console.error('Fetch DB Error:', e);
+        dbData = { users: [], lobbies: [], matches: [] };
+    }
 }
 
 async function saveDb() {
-    await fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) });
+    try {
+        await fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) });
+    } catch (e) {
+        console.error('Save DB Error:', e);
+        showToast('خطا در اتصال به سرور');
+    }
 }
 
 function logout() { currentUser = null; document.getElementById('app').classList.add('hidden'); showAuthModal(); }
@@ -527,10 +538,15 @@ function renderProfile() {
     lucide.createIcons();
 }
 
+// مهم‌ترین بخش: نمایش سریع پنجره ورود برای جلوگیری از صفحه سیاه
 window.onload = async function() {
-    await fetchDb();
-    showAuthModal();
+    showAuthModal(); 
     lucide.createIcons();
+    try {
+        await fetchDb();
+    } catch (e) {
+        console.error("Initial DB fetch failed");
+    }
 };
 </script>
 </body>
