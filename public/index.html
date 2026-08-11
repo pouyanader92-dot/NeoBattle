@@ -17,8 +17,17 @@
         .btn-brand:hover { background: #4f46e5; box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
         .btn-danger { background: #ef4444; transition: 0.2s; color: #fff; border: none; cursor: pointer; }
         .btn-danger:hover { background: #dc2626; }
-        input, select { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
-        input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        
+        /* استایل فیلد باکس‌ها دقیقا مثل پروژه قبلی و حرفه‌ای شد */
+        input, select {
+            background: #1e293b; border: 1px solid #334155; color: #fff; 
+            padding: 1rem; border-radius: 0.5rem; width: 100%; 
+            transition: 0.2s; font-size: 1rem; min-height: 56px; 
+        }
+        input:focus, select:focus { 
+            outline: none; border-color: #6366f1; 
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); 
+        }
         
         @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); } 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); } }
         .pulse-ring { animation: pulse-ring 1.5s infinite; }
@@ -26,7 +35,6 @@
         .animate-spin { animation: spin 1s linear infinite; }
         
         .rank-bronze { color: #d97706; } .rank-silver { color: #94a3b8; } .rank-gold { color: #fbbf24; } .rank-diamond { color: #60a5fa; }
-        
         .game-card { transition: 0.3s; }
         .game-card:hover { transform: translateY(-5px); border-color: #6366f1 !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.2); }
         .ttt-cell { transition: 0.2s; }
@@ -111,14 +119,18 @@
             <h1 class="text-3xl sm:text-4xl font-bold mb-2">آرنا مسابقات</h1>
             <p class="text-slate-400">یک بازی انتخاب کن، حریف پیدا کن و ELO خود را بالا ببر!</p>
         </div>
+        
         <div class="mb-8 flex flex-col sm:flex-row gap-4 items-center justify-center glass p-4 rounded-xl">
-            <label class="text-sm text-slate-400">حالت رقابت:</label>
+            <label class="text-sm text-slate-400">حالت بازی:</label>
             <select id="team-size" class="w-full sm:w-40">
                 <option value="1">۱ نفره (1v1)</option>
                 <option value="2">۲ نفره (2v2)</option>
                 <option value="3">۳ نفره (3v3)</option>
                 <option value="4">۴ نفره (4v4)</option>
             </select>
+            <button id="bot-toggle" onclick="toggleBotMode()" class="btn-brand px-4 py-3 rounded-lg font-bold flex items-center gap-2 text-sm">
+                <i data-lucide="bot" class="w-5 h-5"></i> بازی با بات
+            </button>
         </div>
         <div id="games-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
     </div>
@@ -171,9 +183,21 @@ let currentUser = null;
 let dbData = { users: [], lobbies: [], matches: [] };
 let pollingInterval = null;
 let currentMatchId = null;
+let isBotMode = false;
+let botTimer = null;
+let localBotMatch = null; // برای بازی با بات
+
+const TRIVIA_QUESTIONS = [
+    { q: "پایتخت ایران کجاست؟", opts: ["تهران", "شیراز", "اصفهان", "مشهد"], ans: 0 },
+    { q: "۵ ضرب در ۶ چنده؟", opts: ["۳۵", "۴۰", "۳۰", "۲۵"], ans: 2 },
+    { q: "آب مخفف کدام سیاره است؟", opts: ["مرکری", "زحل", "ناهید", "مشتری"], ans: 3 },
+    { q: "طول رودخانه نیل چقدر است؟", opts: ["۶۶۵۰ کیلومتر", "۵۰۰۰ کیلومتر", "۴۰۰۰ کیلومتر", "۳۰۰۰ کیلومتر"], ans: 0 },
+    { q: "بزرگترین سیاره منظومه شمسی کدام است؟", opts: ["زمین", "مشتری", "زحل", "مریخ"], ans: 1 },
+    { q: "نویسنده کتاب شاهنامه کیست؟", opts: ["سعدی", "حافظ", "فردوسی", "نظامی"], ans: 2 }
+];
 
 const GAMES = [
-    { id: 'math_battle', name: 'نبرد ریاضی', icon: 'calculator', playable: true, desc: 'جمع اعداد رو سریع حساب کن (هدف: ۳۰ امتیاز)' },
+    { id: 'math_battle', name: 'نبرد ریاضی', icon: 'calculator', playable: true, desc: 'جمع اعداد رو سریع حساب کن' },
     { id: 'tictactoe', name: 'دوز بازی', icon: 'grid-3x3', playable: true, desc: 'نوبتی ۳ خانه رو در صف بچین' },
     { id: 'typing', name: 'تایپ سریع', icon: 'keyboard', playable: true, desc: 'متن رو سریع و بدون غلط تایپ کن' },
     { id: 'reaction', name: 'زمان واکنش', icon: 'zap', playable: true, desc: 'وقتی دکمه سبز شد، سریع کلیک کن' },
@@ -219,6 +243,21 @@ function showToast(msg) { const t = document.getElementById('toast'); t.textCont
 function showAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
 function hideAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
 
+function toggleBotMode() {
+    isBotMode = !isBotMode;
+    const btn = document.getElementById('bot-toggle');
+    if(isBotMode) {
+        btn.innerHTML = '<i data-lucide="users" class="w-5 h-5"></i> بازی آنلاین';
+        btn.classList.remove('btn-brand');
+        btn.classList.add('btn-danger');
+    } else {
+        btn.innerHTML = '<i data-lucide="bot" class="w-5 h-5"></i> بازی با بات';
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-brand');
+    }
+    lucide.createIcons();
+}
+
 async function doAuth() {
     const u = document.getElementById('auth-username').value.trim();
     const p = document.getElementById('auth-password').value;
@@ -247,17 +286,12 @@ async function fetchDb() {
         if(!dbData.users) dbData.users = [];
         if(!dbData.lobbies) dbData.lobbies = [];
         if(!dbData.matches) dbData.matches = [];
-    } catch (e) {
-        console.error('Fetch DB Error:', e);
-    }
+    } catch (e) { console.error('Fetch DB Error:', e); }
 }
 
 async function saveDb() {
-    try {
-        await fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) });
-    } catch (e) {
-        console.error('Save DB Error:', e);
-    }
+    try { await fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) }); } 
+    catch (e) { console.error('Save DB Error:', e); }
 }
 
 function logout() { currentUser = null; document.getElementById('app').style.display = 'none'; showAuthModal(); }
@@ -304,6 +338,8 @@ function renderGames() {
 }
 
 async function findMatch(gameId) {
+    if(isBotMode) return startBotMatch(gameId);
+
     const teamSize = document.getElementById('team-size').value;
     document.getElementById('lobby-modal').style.display = 'flex';
     document.getElementById('lobby-info').textContent = `بازی: ${GAMES.find(g=>g.id===gameId).name} | حالت: ${teamSize}vs${teamSize}`;
@@ -340,6 +376,7 @@ async function cancelMatchmaking() {
 
 async function startMatch(match) {
     currentMatchId = match.id;
+    localBotMatch = null;
     document.getElementById('lobby-modal').style.display = 'none';
     document.getElementById('match-modal').style.display = 'flex';
     document.getElementById('m-title').textContent = GAMES.find(g=>g.id===match.gameType).name;
@@ -347,7 +384,6 @@ async function startMatch(match) {
     
     renderMatchUI(match);
     
-    // Polling for opponent moves (reduced to 1.5s for better sync)
     pollingInterval = setInterval(async () => {
         await fetchDb();
         let m = dbData.matches.find(x => x.id === currentMatchId);
@@ -356,10 +392,157 @@ async function startMatch(match) {
     }, 1500);
 }
 
+// ================= bot LOGIC =================
+function startBotMatch(gameId) {
+    clearTimeout(botTimer);
+    localBotMatch = {
+        id: 'bot_match',
+        gameType: gameId,
+        players: [currentUser, 'NeoBot'],
+        state: { scores: { [currentUser]: 0, 'NeoBot': 0 }, turn: currentUser, data: {}, winner: null, startTime: null, finished: false }
+    };
+
+    if(gameId === 'math_battle') initMathBot();
+    else if(gameId === 'tictactoe') {
+        localBotMatch.state.data = { board: ["","","","","","","","",""] };
+        localBotMatch.state.symbols = { [currentUser]: "X", "NeoBot": "O" };
+    } else if(gameId === 'typing') {
+        const texts = ["learning is the key to success", "practice makes perfect", "speed and accuracy matter"];
+        localBotMatch.state.data = { targetText: texts[Math.floor(Math.random()*texts.length)], finished: {} };
+    } else if(gameId === 'trivia') initTriviaBot();
+    else if(gameId === 'reaction') {
+        localBotMatch.state.startTime = Date.now() + Math.floor(Math.random() * 4000) + 2000;
+        // زمان واکنش بات
+        botTimer = setTimeout(() => {
+            if(localBotMatch && !localBotMatch.state.winner) {
+                localBotMatch.state.winner = 'NeoBot';
+                renderMatchUI(localBotMatch);
+            }
+        }, localBotMatch.state.startTime - Date.now() + 500 + Math.random() * 1000);
+    }
+
+    currentMatchId = 'bot_match';
+    document.getElementById('match-modal').style.display = 'flex';
+    document.getElementById('m-title').textContent = GAMES.find(g=>g.id===gameId).name + " (درگیری با بات)";
+    document.getElementById('m-subtitle').textContent = GAMES.find(g=>g.id===gameId).desc;
+    renderMatchUI(localBotMatch);
+}
+
+function initMathBot() {
+    const a = Math.floor(Math.random() * 20) + 1, b = Math.floor(Math.random() * 20) + 1;
+    localBotMatch.state.data = { question: `${a} + ${b}`, currentAnswer: a+b };
+}
+function initTriviaBot() {
+    const q = TRIVIA_QUESTIONS[Math.floor(Math.random() * TRIVIA_QUESTIONS.length)];
+    localBotMatch.state.data = { question: q.q, options: q.opts, currentAnswer: q.ans };
+}
+
+function triggerBotMove() {
+    clearTimeout(botTimer);
+    const m = localBotMatch;
+    if(!m || m.state.winner) return;
+
+    botTimer = setTimeout(() => {
+        if(m.gameType === 'math_battle') {
+            let val = m.state.data.currentAnswer;
+            if(Math.random() > 0.7) val += Math.floor(Math.random()*5)+1; // 30% احتمال اشتباه
+            applyLocalAction('NeoBot', 'answer', val);
+        } else if(m.gameType === 'tictactoe') {
+            let empty = m.state.data.board.map((c, i) => c === "" ? i : null).filter(i => i !== null);
+            if(empty.length > 0) applyLocalAction('NeoBot', 'place', empty[Math.floor(Math.random() * empty.length)]);
+        } else if(m.gameType === 'trivia') {
+            let val = Math.floor(Math.random() * 4);
+            if(Math.random() > 0.4) val = m.state.data.currentAnswer; // 60% احتمال درست
+            applyLocalAction('NeoBot', 'answer_trivia', val);
+        } else if(m.gameType === 'typing') {
+            applyLocalAction('NeoBot', 'finish', m.state.data.targetText);
+        }
+    }, 1200 + Math.random() * 1000); // بات بعد از 1.2 تا 2.2 ثانیه جواب میده
+}
+
+function applyLocalAction(username, action, value) {
+    const m = localBotMatch;
+    if(!m || m.state.winner) return;
+
+    if(m.gameType === 'math_battle') {
+        if(action === 'answer' && m.state.turn === username) {
+            if(value === m.state.data.currentAnswer) {
+                m.state.scores[username] += 10;
+                if(m.state.scores[username] >= 30) m.state.winner = username;
+                else {
+                    initMathBot();
+                    m.state.turn = m.players.find(p => p !== username);
+                }
+            } else { m.state.scores[username] -= 2; }
+        }
+    } else if(m.gameType === 'tictactoe') {
+        if(action === 'place' && m.state.turn === username) {
+            if(m.state.data.board[value] === "") {
+                m.state.data.board[value] = m.state.symbols[username];
+                const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+                for(let pattern of winPatterns) {
+                    if(m.state.data.board[pattern[0]] !== "" && 
+                       m.state.data.board[pattern[0]] === m.state.data.board[pattern[1]] && 
+                       m.state.data.board[pattern[1]] === m.state.data.board[pattern[2]]) {
+                        m.state.winner = username; break;
+                    }
+                }
+                if(!m.state.winner && !m.state.data.board.includes("")) m.state.winner = "draw";
+                else if(!m.state.winner) m.state.turn = m.players.find(p => p !== username);
+            }
+        }
+    } else if(m.gameType === 'typing') {
+        if(action === 'finish' && !m.state.data.finished[username]) {
+            if(value === m.state.data.targetText) {
+                m.state.data.finished[username] = true;
+                m.state.winner = username;
+            }
+        }
+    } else if(m.gameType === 'trivia') {
+        if(action === 'answer_trivia' && m.state.turn === username) {
+            if(value === m.state.data.currentAnswer) {
+                m.state.scores[username] += 10;
+                if(m.state.scores[username] >= 30) m.state.winner = username;
+                else {
+                    initTriviaBot();
+                    m.state.turn = m.players.find(p => p !== username);
+                }
+            } else { m.state.scores[username] -= 2; }
+        }
+    } else if(m.gameType === 'reaction') {
+        if(action === 'click' && !m.state.winner) m.state.winner = username;
+    }
+
+    renderMatchUI(m);
+
+    if(!m.state.winner && m.state.turn === 'NeoBot') {
+        triggerBotMove();
+    }
+
+    if(m.state.winner && !m.state.finished) {
+        m.state.finished = true;
+        finishBotMatch(m);
+    }
+}
+
+async function finishBotMatch(m) {
+    const isWin = m.state.winner === currentUser;
+    const isDraw = m.state.winner === 'draw';
+    await fetch('/api/user/update', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ username: currentUser, game: m.gameType, result: isWin ? 'win' : (isDraw ? 'draw' : 'lose') })
+    });
+    await fetchDb();
+    updateNav();
+}
+// ===============================================
+
 async function renderMatchUI(match) {
+    const isBot = match.id === 'bot_match';
     const userScore = match.state.scores[currentUser] || 0;
-    const enemy = match.players.find(p => p !== currentUser);
-    const enemyScore = match.state.scores[enemy] || 0;
+    const enemyName = isBot ? 'NeoBot' : match.players.find(p => p !== currentUser);
+    const enemyScore = match.state.scores[enemyName] || 0;
     
     document.getElementById('m-score').textContent = userScore;
     document.getElementById('m-enemy-score').textContent = enemyScore;
@@ -367,11 +550,13 @@ async function renderMatchUI(match) {
     const content = document.getElementById('m-content');
     
     if(match.state.winner) {
-        clearInterval(pollingInterval);
+        if(!isBot) clearInterval(pollingInterval);
+        else clearTimeout(botTimer);
+        
         const isWin = match.state.winner === currentUser;
         const isDraw = match.state.winner === 'draw';
         
-        if(!match.finished) {
+        if(!isBot && !match.finished) {
             await fetch('/api/match/finish', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ matchId: match.id }) });
             await fetchDb();
             updateNav();
@@ -379,7 +564,7 @@ async function renderMatchUI(match) {
         
         content.innerHTML = `<div class="text-center py-8">
             <i data-lucide="${isDraw ? 'meh' : (isWin ? 'smile' : 'frown')}" class="w-20 h-20 mx-auto mb-4 ${isDraw ? 'text-slate-400' : (isWin ? 'text-emerald-400' : 'text-rose-400')}"></i>
-            <h3 class="text-2xl font-bold mb-2">${isDraw ? 'مساوی شد!' : (isWin ? 'شما برنده شدید! (+15 ELO)' : 'شما باختید! (-10 ELO)')}</h3>
+            <h3 class="text-2xl font-bold mb-2">${isDraw ? 'مساوی شد!' : (isWin ? 'شما برنده شدید!' : 'شما باختید!')}</h3>
             <button onclick="endMatch()" class="btn-brand px-6 py-2 rounded-lg mt-4">بستن و بازگشت</button>
         </div>`;
         lucide.createIcons();
@@ -394,7 +579,7 @@ async function renderMatchUI(match) {
             <button onclick="submitMath()" class="btn-brand px-6 py-2 rounded-lg font-bold">ارسال</button>`;
             document.getElementById('math-answer').focus();
         } else {
-            content.innerHTML = `<p class="text-slate-400 text-lg">حریف در حال پاسخگویی است...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`;
+            content.innerHTML = `<p class="text-slate-400 text-lg">در انتظار حرکت حریف...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`;
         }
     } else if(match.gameType === 'tictactoe') {
         const mySymbol = match.state.symbols[currentUser];
@@ -416,7 +601,7 @@ async function renderMatchUI(match) {
         document.getElementById('typing-input').focus();
     } else if(match.gameType === 'reaction') {
         if(!match.state.startTime) {
-            if(match.state.turn === currentUser) {
+            if(!isBot && match.state.turn === currentUser) {
                 fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'init' }) });
             }
             content.innerHTML = `<div class="w-32 h-32 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xl">آماده باش...</div>`;
@@ -439,76 +624,100 @@ async function renderMatchUI(match) {
                 `).join('')}
             </div>`;
         } else {
-            content.innerHTML = `<p class="text-slate-400 text-lg">حریف در حال پاسخگویی است...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`;
+            content.innerHTML = `<p class="text-slate-400 text-lg">در انتظار پاسخ حریف...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`;
         }
     }
     lucide.createIcons();
 }
 
-// --- Actions with Optimistic UI ---
 async function submitMath() {
     const val = parseInt(document.getElementById('math-answer').value);
     if(isNaN(val)) return;
     
-    // Optimistic Update
-    const match = dbData.matches.find(m => m.id === currentMatchId);
-    if(match) {
-        match.state.turn = match.players.find(p => p !== currentUser);
-        renderMatchUI(match);
+    if(currentMatchId === 'bot_match') {
+        applyLocalAction(currentUser, 'answer', val);
+    } else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match) {
+            match.state.turn = match.players.find(p => p !== currentUser);
+            renderMatchUI(match);
+        }
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer', value: val }) });
     }
-    
-    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer', value: val }) });
 }
 
 async function placeTTT(index) {
-    const match = dbData.matches.find(m => m.id === currentMatchId);
-    if(match && match.state.turn === currentUser && match.state.data.board[index] === "") {
-        // Optimistic Update
-        match.state.data.board[index] = match.state.symbols[currentUser];
-        match.state.turn = match.players.find(p => p !== currentUser);
-        renderMatchUI(match);
-        
-        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
+    if(currentMatchId === 'bot_match') {
+        applyLocalAction(currentUser, 'place', index);
+    } else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match && match.state.turn === currentUser && match.state.data.board[index] === "") {
+            match.state.data.board[index] = match.state.symbols[currentUser];
+            match.state.turn = match.players.find(p => p !== currentUser);
+            renderMatchUI(match);
+            await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
+        }
     }
 }
 
 async function submitTyping() {
     const val = document.getElementById('typing-input').value;
-    const match = dbData.matches.find(m => m.id === currentMatchId);
-    if(match) {
-        match.state.turn = match.players.find(p => p !== currentUser);
-        renderMatchUI(match);
+    if(currentMatchId === 'bot_match') {
+        applyLocalAction(currentUser, 'finish', val);
+    } else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match) {
+            match.state.turn = match.players.find(p => p !== currentUser);
+            renderMatchUI(match);
+        }
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'finish', value: val }) });
     }
-    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'finish', value: val }) });
 }
 
 async function reactionClick() {
-    const match = dbData.matches.find(m => m.id === currentMatchId);
-    if(match) {
-        match.state.winner = currentUser;
-        renderMatchUI(match);
+    if(currentMatchId === 'bot_match') {
+        applyLocalAction(currentUser, 'click', null);
+    } else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match) {
+            match.state.winner = currentUser;
+            renderMatchUI(match);
+        }
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
     }
-    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
 }
 
 async function submitTrivia(optionIndex) {
-    const match = dbData.matches.find(m => m.id === currentMatchId);
-    if(match) {
-        match.state.turn = match.players.find(p => p !== currentUser);
-        renderMatchUI(match);
+    if(currentMatchId === 'bot_match') {
+        applyLocalAction(currentUser, 'answer_trivia', optionIndex);
+    } else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match) {
+            match.state.turn = match.players.find(p => p !== currentUser);
+            renderMatchUI(match);
+        }
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer_trivia', value: optionIndex }) });
     }
-    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer_trivia', value: optionIndex }) });
 }
 
 async function endMatch() {
     clearInterval(pollingInterval);
+    clearTimeout(botTimer);
     currentMatchId = null;
+    localBotMatch = null;
     document.getElementById('match-modal').style.display = 'none';
     navigate('home');
 }
 
 async function leaveMatch() {
-    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'surrender' }) });
+    if(currentMatchId === 'bot_match') {
+        if(localBotMatch && !localBotMatch.state.winner) {
+            localBotMatch.state.winner = 'NeoBot';
+            await finishBotMatch(localBotMatch);
+        }
+    } else {
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'surrender' }) });
+    }
     endMatch();
 }
 
@@ -566,11 +775,7 @@ function renderProfile() {
 
 window.onload = async function() {
     lucide.createIcons();
-    try {
-        await fetchDb();
-    } catch (e) {
-        console.error("Initial DB fetch failed");
-    }
+    try { await fetchDb(); } catch (e) { console.error("Initial DB fetch failed"); }
 };
 </script>
 </body>
