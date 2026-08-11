@@ -75,7 +75,7 @@
             </div>
             <div class="text-center">
                 <h2 id="m-title" class="text-xl font-bold">نبرد</h2>
-                <div class="text-xs text-slate-500">در حال بازی...</div>
+                <div class="text-xs text-slate-500" id="m-subtitle">در حال بازی...</div>
             </div>
             <div class="text-center">
                 <div class="text-xs text-slate-400">حریف</div>
@@ -120,7 +120,7 @@
                 <option value="4">۴ نفره (4v4)</option>
             </select>
         </div>
-        <div id="games-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+        <div id="games-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
     </div>
 
     <div id="section-profile" class="hidden">
@@ -173,46 +173,46 @@ let pollingInterval = null;
 let currentMatchId = null;
 
 const GAMES = [
-    { id: 'math_battle', name: 'نبرد ریاضی', icon: 'calculator', playable: true },
-    { id: 'tictactoe', name: 'دوز بازی', icon: 'grid-3x3', playable: true },
-    { id: 'typing', name: 'تایپ سریع', icon: 'keyboard', playable: true },
-    { id: 'reaction', name: 'زمان واکنش', icon: 'zap', playable: true },
-    { id: 'memory', name: 'حافظه تصویری', icon: 'image', playable: false },
-    { id: 'chess', name: 'شطرنج سریع', icon: 'crown', playable: false },
-    { id: 'connect4', name: 'چهار در صف', icon: 'circle', playable: false },
-    { id: 'checkers', name: 'دامه', icon: 'square', playable: false },
-    { id: 'sudoku', name: 'سودوکو', icon: 'layout-grid', playable: false },
-    { id: 'crossword', name: 'جدول کلمات', icon: 'book-open', playable: false },
-    { id: 'wordhunt', name: 'شکار کلمات', icon: 'search', playable: false },
-    { id: 'anagram', name: 'جایگذاری حروف', icon: 'shuffle', playable: false },
-    { id: 'trivia', name: 'دانستنی‌ها', icon: 'help-circle', playable: false },
-    { id: 'geography', name: 'جغرافیا', icon: 'globe', playable: false },
-    { id: 'flag_quiz', name: 'پرچم‌ها', icon: 'flag', playable: false },
-    { id: 'logic_puzzle', name: 'معمای منطق', icon: 'puzzle', playable: false },
-    { id: 'riddles', name: 'چیستان', icon: 'meh', playable: false },
-    { id: 'color_match', name: 'تطبیق رنگ', icon: 'palette', playable: false },
-    { id: 'pattern', name: 'الگوی تصویری', icon: 'pattern', playable: false },
-    { id: 'odd_one_out', name: 'پیدا کن متفاوت را', icon: 'eye', playable: false },
-    { id: 'math_sequence', name: 'دنباله اعداد', icon: 'list-ordered', playable: false },
-    { id: 'word_scramble', name: 'کلمات درهم', icon: 'git-pull-request', playable: false },
-    { id: 'morse_code', name: 'کد مورس', icon: 'radio', playable: false },
-    { id: 'binary', name: 'باینری', icon: 'binary', playable: false },
-    { id: 'maze', name: 'هزارتو', icon: 'route', playable: false },
-    { id: 'sliding_puzzle', name: 'پازل متحرک', icon: 'move', playable: false },
-    { id: 'hangman', name: 'دار کشی', icon: 'gamepad-2', playable: false },
-    { id: 'wordle', name: 'وردل', icon: 'type', playable: false },
-    { id: '2048', name: '۲۰۴۸', icon: 'grid', playable: false },
-    { id: 'minesweeper', name: 'مین‌یاب', icon: 'bomb', playable: false },
-    { id: 'sokoban', name: 'انباری', icon: 'box', playable: false },
-    { id: 'tetris', name: 'تتریس', icon: 'blocks', playable: false },
-    { id: 'snake', name: 'مار', icon: 'wind', playable: false },
-    { id: 'pong', name: 'پینگ پنگ', icon: 'circle-dot', playable: false },
-    { id: 'breakout', name: 'آجرشکن', icon: 'square-stack', playable: false },
-    { id: 'aim_trainer', name: 'هدف‌گیری', icon: 'target', playable: false },
-    { id: 'stroop', name: 'تست استروپ', icon: 'paintbrush', playable: false },
-    { id: 'schulte', name: 'جدول شولته', icon: 'table', playable: false },
-    { id: 'simon', name: 'بازی سیمون', icon: 'music', playable: false },
-    { id: 'chess_puzzle', name: 'معمای شطرنج', icon: 'king', playable: false }
+    { id: 'math_battle', name: 'نبرد ریاضی', icon: 'calculator', playable: true, desc: 'جمع اعداد رو سریع حساب کن (هدف: ۳۰ امتیاز)' },
+    { id: 'tictactoe', name: 'دوز بازی', icon: 'grid-3x3', playable: true, desc: 'نوبتی ۳ خانه رو در صف بچین' },
+    { id: 'typing', name: 'تایپ سریع', icon: 'keyboard', playable: true, desc: 'متن رو سریع و بدون غلط تایپ کن' },
+    { id: 'reaction', name: 'زمان واکنش', icon: 'zap', playable: true, desc: 'وقتی دکمه سبز شد، سریع کلیک کن' },
+    { id: 'trivia', name: 'دانستنی‌ها', icon: 'help-circle', playable: true, desc: 'به سوالات عمومی سریع جواب بده' },
+    { id: 'memory', name: 'حافظه تصویری', icon: 'image', playable: false, desc: 'به زودی...' },
+    { id: 'chess', name: 'شطرنج سریع', icon: 'crown', playable: false, desc: 'به زودی...' },
+    { id: 'connect4', name: 'چهار در صف', icon: 'circle', playable: false, desc: 'به زودی...' },
+    { id: 'checkers', name: 'دامه', icon: 'square', playable: false, desc: 'به زودی...' },
+    { id: 'sudoku', name: 'سودوکو', icon: 'layout-grid', playable: false, desc: 'به زودی...' },
+    { id: 'crossword', name: 'جدول کلمات', icon: 'book-open', playable: false, desc: 'به زودی...' },
+    { id: 'wordhunt', name: 'شکار کلمات', icon: 'search', playable: false, desc: 'به زودی...' },
+    { id: 'anagram', name: 'جایگذاری حروف', icon: 'shuffle', playable: false, desc: 'به زودی...' },
+    { id: 'geography', name: 'جغرافیا', icon: 'globe', playable: false, desc: 'به زودی...' },
+    { id: 'flag_quiz', name: 'پرچم‌ها', icon: 'flag', playable: false, desc: 'به زودی...' },
+    { id: 'logic_puzzle', name: 'معمای منطق', icon: 'puzzle', playable: false, desc: 'به زودی...' },
+    { id: 'riddles', name: 'چیستان', icon: 'meh', playable: false, desc: 'به زودی...' },
+    { id: 'color_match', name: 'تطبیق رنگ', icon: 'palette', playable: false, desc: 'به زودی...' },
+    { id: 'pattern', name: 'الگوی تصویری', icon: 'pattern', playable: false, desc: 'به زودی...' },
+    { id: 'odd_one_out', name: 'پیدا کن متفاوت را', icon: 'eye', playable: false, desc: 'به زودی...' },
+    { id: 'math_sequence', name: 'دنباله اعداد', icon: 'list-ordered', playable: false, desc: 'به زودی...' },
+    { id: 'word_scramble', name: 'کلمات درهم', icon: 'git-pull-request', playable: false, desc: 'به زودی...' },
+    { id: 'morse_code', name: 'کد مورس', icon: 'radio', playable: false, desc: 'به زودی...' },
+    { id: 'binary', name: 'باینری', icon: 'binary', playable: false, desc: 'به زودی...' },
+    { id: 'maze', name: 'هزارتو', icon: 'route', playable: false, desc: 'به زودی...' },
+    { id: 'sliding_puzzle', name: 'پازل متحرک', icon: 'move', playable: false, desc: 'به زودی...' },
+    { id: 'hangman', name: 'دار کشی', icon: 'gamepad-2', playable: false, desc: 'به زودی...' },
+    { id: 'wordle', name: 'وردل', icon: 'type', playable: false, desc: 'به زودی...' },
+    { id: '2048', name: '۲۰۴۸', icon: 'grid', playable: false, desc: 'به زودی...' },
+    { id: 'minesweeper', name: 'مین‌یاب', icon: 'bomb', playable: false, desc: 'به زودی...' },
+    { id: 'sokoban', name: 'انباری', icon: 'box', playable: false, desc: 'به زودی...' },
+    { id: 'tetris', name: 'تتریس', icon: 'blocks', playable: false, desc: 'به زودی...' },
+    { id: 'snake', name: 'مار', icon: 'wind', playable: false, desc: 'به زودی...' },
+    { id: 'pong', name: 'پینگ پنگ', icon: 'circle-dot', playable: false, desc: 'به زودی...' },
+    { id: 'breakout', name: 'آجرشکن', icon: 'square-stack', playable: false, desc: 'به زودی...' },
+    { id: 'aim_trainer', name: 'هدف‌گیری', icon: 'target', playable: false, desc: 'به زودی...' },
+    { id: 'stroop', name: 'تست استروپ', icon: 'paintbrush', playable: false, desc: 'به زودی...' },
+    { id: 'schulte', name: 'جدول شولته', icon: 'table', playable: false, desc: 'به زودی...' },
+    { id: 'simon', name: 'بازی سیمون', icon: 'music', playable: false, desc: 'به زودی...' },
+    { id: 'chess_puzzle', name: 'معمای شطرنج', icon: 'king', playable: false, desc: 'به زودی...' }
 ];
 
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
@@ -249,7 +249,6 @@ async function fetchDb() {
         if(!dbData.matches) dbData.matches = [];
     } catch (e) {
         console.error('Fetch DB Error:', e);
-        dbData = { users: [], lobbies: [], matches: [] };
     }
 }
 
@@ -258,7 +257,6 @@ async function saveDb() {
         await fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) });
     } catch (e) {
         console.error('Save DB Error:', e);
-        showToast('خطا در اتصال به سرور');
     }
 }
 
@@ -297,7 +295,8 @@ function renderGames() {
             <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3">
                 <i data-lucide="${g.icon}" class="w-6 h-6 text-indigo-400"></i>
             </div>
-            <div class="font-bold text-sm">${g.name}</div>
+            <div class="font-bold text-sm mb-1">${g.name}</div>
+            <div class="text-[10px] text-slate-400">${g.desc}</div>
         </div>
     `).join('');
     document.getElementById('games-grid').innerHTML = html;
@@ -324,7 +323,7 @@ async function findMatch(gameId) {
                 clearInterval(pollingInterval);
                 startMatch(match);
             }
-        }, 1500);
+        }, 2000);
     } else if(data.status === 'in_match') {
         startMatch(data.match);
     }
@@ -344,18 +343,19 @@ async function startMatch(match) {
     document.getElementById('lobby-modal').style.display = 'none';
     document.getElementById('match-modal').style.display = 'flex';
     document.getElementById('m-title').textContent = GAMES.find(g=>g.id===match.gameType).name;
+    document.getElementById('m-subtitle').textContent = GAMES.find(g=>g.id===match.gameType).desc;
     
     renderMatchUI(match);
     
+    // Polling for opponent moves (reduced to 1.5s for better sync)
     pollingInterval = setInterval(async () => {
         await fetchDb();
         let m = dbData.matches.find(x => x.id === currentMatchId);
         if(m) renderMatchUI(m);
         else endMatch();
-    }, 1000);
+    }, 1500);
 }
 
-// این تابع به async تغییر کرد تا ارور await رفع شود
 async function renderMatchUI(match) {
     const userScore = match.state.scores[currentUser] || 0;
     const enemy = match.players.find(p => p !== currentUser);
@@ -388,19 +388,19 @@ async function renderMatchUI(match) {
     
     if(match.gameType === 'math_battle') {
         if(match.state.turn === currentUser) {
-            content.innerHTML = `<p class="mb-4 text-lg">نوبت شماست! جواب چند است؟</p>
-            <div class="text-5xl font-bold text-indigo-400 mb-6">${match.state.data.question} = ?</div>
+            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">نوبت شماست!</p>
+            <div dir="ltr" class="text-5xl font-bold text-indigo-400 mb-6 bg-slate-800/50 px-8 py-4 rounded-xl">${match.state.data.question} = ?</div>
             <input type="number" id="math-answer" placeholder="جواب" class="w-32 text-center text-2xl font-bold mb-4" onkeydown="if(event.key==='Enter')submitMath()">
             <button onclick="submitMath()" class="btn-brand px-6 py-2 rounded-lg font-bold">ارسال</button>`;
             document.getElementById('math-answer').focus();
         } else {
-            content.innerHTML = `<p class="text-slate-400">حریف در حال پاسخگویی است...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`;
+            content.innerHTML = `<p class="text-slate-400 text-lg">حریف در حال پاسخگویی است...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`;
         }
     } else if(match.gameType === 'tictactoe') {
         const mySymbol = match.state.symbols[currentUser];
         const isMyTurn = match.state.turn === currentUser;
         content.innerHTML = `
-            <p class="mb-4 text-sm ${isMyTurn ? 'text-emerald-400' : 'text-slate-400'}">شما: ${mySymbol} | ${isMyTurn ? 'نوبت شماست' : 'نوبت حریف'}</p>
+            <p class="mb-4 text-sm ${isMyTurn ? 'text-emerald-400' : 'text-slate-400'}">شما (<b>${mySymbol}</b>) | ${isMyTurn ? 'نوبت شماست' : 'نوبت حریف'}</p>
             <div class="grid grid-cols-3 gap-2 w-64">
                 ${match.state.data.board.map((cell, i) => `
                     <div onclick="${isMyTurn ? `placeTTT(${i})` : ''}" class="ttt-cell h-20 bg-slate-800 rounded-lg flex items-center justify-center text-4xl font-bold ${cell === 'X' ? 'text-emerald-400' : 'text-rose-400'} cursor-pointer">
@@ -410,42 +410,94 @@ async function renderMatchUI(match) {
             </div>`;
     } else if(match.gameType === 'typing') {
         content.innerHTML = `<p class="mb-4 text-sm text-slate-400">متن زیر را سریع و دقیق تایپ کنید:</p>
-        <div class="bg-slate-800 p-4 rounded-lg mb-4 text-lg font-bold">${match.state.data.targetText}</div>
-        <input type="text" id="typing-input" placeholder="اینجا تایپ کنید..." class="w-full max-w-md mb-4">
+        <div dir="ltr" class="bg-slate-800 p-4 rounded-lg mb-4 text-lg font-bold text-amber-400">${match.state.data.targetText}</div>
+        <input type="text" id="typing-input" placeholder="اینجا تایپ کنید..." class="w-full max-w-md mb-4 text-center" autofocus>
         <button onclick="submitTyping()" class="btn-brand px-6 py-2 rounded-lg font-bold">اتمام تایپ</button>`;
+        document.getElementById('typing-input').focus();
     } else if(match.gameType === 'reaction') {
         if(!match.state.startTime) {
             if(match.state.turn === currentUser) {
                 fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'init' }) });
             }
-            content.innerHTML = `<p class="text-amber-400 text-lg">آماده باش...</p>`;
+            content.innerHTML = `<div class="w-32 h-32 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xl">آماده باش...</div>`;
         } else {
             const remaining = match.state.startTime - Date.now();
             if(remaining > 0) {
-                content.innerHTML = `<p class="text-amber-400 text-lg">آماده باش...</p>`;
+                content.innerHTML = `<div class="w-32 h-32 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xl">آماده باش...</div>`;
             } else {
-                content.innerHTML = `<p class="text-emerald-400 font-bold mb-4">الان!</p>
-                <button onclick="reactionClick()" class="bg-emerald-600 px-10 py-5 rounded-xl font-bold">کلیک کن!</button>`;
+                content.innerHTML = `<p class="text-emerald-400 font-bold mb-4 text-xl">الان!</p>
+                <button onclick="reactionClick()" class="bg-emerald-600 px-10 py-5 rounded-xl font-bold text-lg pulse-ring">کلیک کن!</button>`;
             }
+        }
+    } else if(match.gameType === 'trivia') {
+        if(match.state.turn === currentUser) {
+            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">سوال عمومی:</p>
+            <div class="text-xl font-bold text-indigo-400 mb-6 bg-slate-800/50 px-8 py-4 rounded-xl">${match.state.data.question}</div>
+            <div class="grid grid-cols-2 gap-3 w-full max-w-md">
+                ${match.state.data.options.map((opt, i) => `
+                    <button onclick="submitTrivia(${i})" class="bg-slate-800 hover:bg-indigo-600 transition px-4 py-3 rounded-lg font-medium border border-slate-700">${opt}</button>
+                `).join('')}
+            </div>`;
+        } else {
+            content.innerHTML = `<p class="text-slate-400 text-lg">حریف در حال پاسخگویی است...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`;
         }
     }
     lucide.createIcons();
 }
 
+// --- Actions with Optimistic UI ---
 async function submitMath() {
     const val = parseInt(document.getElementById('math-answer').value);
     if(isNaN(val)) return;
+    
+    // Optimistic Update
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match) {
+        match.state.turn = match.players.find(p => p !== currentUser);
+        renderMatchUI(match);
+    }
+    
     await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer', value: val }) });
 }
+
 async function placeTTT(index) {
-    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match && match.state.turn === currentUser && match.state.data.board[index] === "") {
+        // Optimistic Update
+        match.state.data.board[index] = match.state.symbols[currentUser];
+        match.state.turn = match.players.find(p => p !== currentUser);
+        renderMatchUI(match);
+        
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
+    }
 }
+
 async function submitTyping() {
     const val = document.getElementById('typing-input').value;
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match) {
+        match.state.turn = match.players.find(p => p !== currentUser);
+        renderMatchUI(match);
+    }
     await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'finish', value: val }) });
 }
+
 async function reactionClick() {
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match) {
+        match.state.winner = currentUser;
+        renderMatchUI(match);
+    }
     await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
+}
+
+async function submitTrivia(optionIndex) {
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match) {
+        match.state.turn = match.players.find(p => p !== currentUser);
+        renderMatchUI(match);
+    }
+    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer_trivia', value: optionIndex }) });
 }
 
 async function endMatch() {
