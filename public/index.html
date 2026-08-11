@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoBattle - آرنا رقابت فکری</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Vazirmatn', 'sans-serif'] } } } }
+    </script>
+    <style>
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Vazirmatn', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .glass { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(99, 102, 241, 0.2); }
+        .btn-brand { background: #6366f1; transition: 0.2s; }
+        .btn-brand:hover { background: #4f46e5; box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
+        .btn-danger { background: #ef4444; transition: 0.2s; }
+        .btn-danger:hover { background: #dc2626; }
+        input, select { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
+        input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); } 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); } }
+        .pulse-ring { animation: pulse-ring 1.5s infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        
+        .rank-bronze { color: #d97706; } .rank-silver { color: #94a3b8; } .rank-gold { color: #fbbf24; } .rank-diamond { color: #60a5fa; }
+        
+        .game-card { transition: 0.3s; }
+        .game-card:hover { transform: translateY(-5px); border-color: #6366f1; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.2); }
+        
+        .ttt-cell { transition: 0.2s; }
+        .ttt-cell:hover { background: #334155; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] hidden glass px-6 py-3 rounded-lg text-sm font-medium border-indigo-500"></div>
+
+<!-- Auth Modal -->
+<div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80">
+    <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
+        <div class="w-16 h-16 mx-auto bg-indigo-600 rounded-2xl flex items-center justify-center text-3xl font-bold mb-4">N</div>
+        <h2 class="text-2xl font-bold mb-2">ورود به نئو بَتِل</h2>
+        <p class="text-slate-400 text-sm mb-6">آرنا مسابقات فکری</p>
+        <div class="space-y-4 text-right">
+            <div><label class="text-xs text-slate-400">نام کاربری</label><input id="auth-username" type="text" placeholder="Username..."></div>
+            <div><label class="text-xs text-slate-400">رمز عبور</label><input id="auth-password" type="password" placeholder="Password..." onkeydown="if(event.key==='Enter')doAuth()"></div>
+            <button onclick="doAuth()" class="w-full btn-brand py-3 rounded-lg font-bold">ورود / ثبت‌نام</button>
+        </div>
+    </div>
+</div>
+
+<!-- Matchmaking Modal -->
+<div id="lobby-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/90">
+    <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
+        <div class="w-20 h-20 mx-auto rounded-full bg-indigo-600 flex items-center justify-center mb-6 pulse-ring">
+            <i data-lucide="loader" class="w-10 h-10 animate-spin"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2">در جستجوی حریف...</h3>
+        <p id="lobby-info" class="text-slate-400 mb-6"></p>
+        <button onclick="cancelMatchmaking()" class="btn-danger px-6 py-2 rounded-lg font-bold">لغو جستجو</button>
+    </div>
+</div>
+
+<!-- Live Match Arena -->
+<div id="match-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/95">
+    <div class="glass p-6 w-full max-w-3xl rounded-2xl">
+        <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+            <div class="text-center">
+                <div class="text-xs text-slate-400">شما</div>
+                <div class="text-2xl font-bold text-emerald-400" id="m-score">0</div>
+            </div>
+            <div class="text-center">
+                <h2 id="m-title" class="text-xl font-bold">نبرد</h2>
+                <div class="text-xs text-slate-500">در حال بازی...</div>
+            </div>
+            <div class="text-center">
+                <div class="text-xs text-slate-400">حریف</div>
+                <div class="text-2xl font-bold text-rose-400" id="m-enemy-score">0</div>
+            </div>
+        </div>
+        <div id="m-content" class="min-h-[250px] flex flex-col items-center justify-center text-center"></div>
+        <div class="mt-6 text-center">
+            <button onclick="leaveMatch()" class="text-slate-400 hover:text-red-400 text-sm">ترک بازی (تسلیم شدن)</button>
+        </div>
+    </div>
+</div>
+
+<!-- App Layout -->
+<div id="app" class="hidden max-w-6xl mx-auto p-4 pb-20">
+    <nav class="flex justify-between items-center mb-8 glass p-4 rounded-2xl sticky top-4 z-30">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="navigate('home')">
+            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center font-bold text-lg">N</div>
+            <span class="font-bold text-xl hidden sm:block">NeoBattle</span>
+        </div>
+        <div class="flex items-center gap-4 sm:gap-6">
+            <div class="flex items-center gap-2 text-amber-400 font-bold">
+                <i data-lucide="trophy" class="w-5 h-5"></i>
+                <span id="nav-elo">0</span>
+            </div>
+            <button onclick="navigate('home')" class="text-sm text-slate-300 hover:text-white">آرنا</button>
+            <button onclick="navigate('profile')" class="text-sm text-slate-300 hover:text-white">پنل کاربری</button>
+            <button onclick="logout()" class="text-slate-400 hover:text-red-400 p-2"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+        </div>
+    </nav>
+
+    <!-- Home / Arena -->
+    <div id="section-home">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl sm:text-4xl font-bold mb-2">آرنا مسابقات</h1>
+            <p class="text-slate-400">یک بازی انتخاب کن، حریف پیدا کن و ELO خود را بالا ببر!</p>
+        </div>
+        
+        <div class="mb-8 flex flex-col sm:flex-row gap-4 items-center justify-center glass p-4 rounded-xl">
+            <label class="text-sm text-slate-400">حالت رقابت:</label>
+            <select id="team-size" class="w-full sm:w-40">
+                <option value="1">۱ نفره (1v1)</option>
+                <option value="2">۲ نفره (2v2)</option>
+                <option value="3">۳ نفره (3v3)</option>
+                <option value="4">۴ نفره (4v4)</option>
+            </select>
+        </div>
+
+        <div id="games-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+    </div>
+
+    <!-- Profile Panel -->
+    <div id="section-profile" class="hidden">
+        <div class="glass p-6 rounded-2xl mb-6">
+            <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
+                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl font-bold" id="p-avatar">N</div>
+                <div class="flex-1 text-center sm:text-right">
+                    <h2 id="p-username" class="text-2xl font-bold mb-1">کاربر</h2>
+                    <div class="flex items-center gap-3 justify-center sm:justify-start">
+                        <span id="p-rank-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-800">رتبه: -</span>
+                        <span class="text-amber-400 font-bold"><span id="p-elo">1000</span> ELO</span>
+                    </div>
+                    <div class="mt-3 w-full bg-slate-700 rounded-full h-2.5">
+                        <div id="p-elo-bar" class="bg-gradient-to-l from-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-500" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 text-center mb-6">
+                <div class="bg-slate-800/50 p-4 rounded-xl">
+                    <div class="text-2xl font-bold text-emerald-400" id="p-wins">0</div>
+                    <div class="text-xs text-slate-400 mt-1">برد</div>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl">
+                    <div class="text-2xl font-bold text-rose-400" id="p-losses">0</div>
+                    <div class="text-xs text-slate-400 mt-1">باخت</div>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl">
+                    <div class="text-2xl font-bold text-amber-400" id="p-winrate">0%</div>
+                    <div class="text-xs text-slate-400 mt-1">نرخ برد</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-6">
+            <div class="glass p-6 rounded-2xl">
+                <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 text-indigo-400"></i> تاریخچه بازی‌ها</h3>
+                <div id="p-history" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="award" class="w-5 h-5 text-amber-400"></i> دستاوردها</h3>
+                <div id="p-achievements" class="grid grid-cols-3 gap-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentUser = null;
+let dbData = { users: [], lobbies: [], matches: [] };
+let pollingInterval = null;
+let currentMatchId = null;
+
+// 40 Games (4 Playable)
+const GAMES = [
+    { id: 'math_battle', name: 'نبرد ریاضی', icon: 'calculator', playable: true },
+    { id: 'tictactoe', name: 'دوز بازی', icon: 'grid-3x3', playable: true },
+    { id: 'typing', name: 'تایپ سریع', icon: 'keyboard', playable: true },
+    { id: 'reaction', name: 'زمان واکنش', icon: 'zap', playable: true },
+    { id: 'memory', name: 'حافظه تصویری', icon: 'image', playable: false },
+    { id: 'chess', name: 'شطرنج سریع', icon: 'crown', playable: false },
+    { id: 'connect4', name: 'چهار در صف', icon: 'circle', playable: false },
+    { id: 'checkers', name: 'دامه', icon: 'square', playable: false },
+    { id: 'sudoku', name: 'سودوکو', icon: 'layout-grid', playable: false },
+    { id: 'crossword', name: 'جدول کلمات', icon: 'book-open', playable: false },
+    { id: 'wordhunt', name: 'شکار کلمات', icon: 'search', playable: false },
+    { id: 'anagram', name: 'جایگذاری حروف', icon: 'shuffle', playable: false },
+    { id: 'trivia', name: 'دانستنی‌ها', icon: 'help-circle', playable: false },
+    { id: 'geography', name: 'جغرافیا', icon: 'globe', playable: false },
+    { id: 'flag_quiz', name: 'پرچم‌ها', icon: 'flag', playable: false },
+    { id: 'logic_puzzle', name: 'معمای منطق', icon: 'puzzle', playable: false },
+    { id: 'riddles', name: 'چیستان', icon: 'meh', playable: false },
+    { id: 'color_match', name: 'تطبیق رنگ', icon: 'palette', playable: false },
+    { id: 'pattern', name: 'الگوی تصویری', icon: 'pattern', playable: false },
+    { id: 'odd_one_out', name: 'پیدا کن متفاوت را', icon: 'eye', playable: false },
+    { id: 'math_sequence', name: 'دنباله اعداد', icon: 'list-ordered', playable: false },
+    { id: 'word_scramble', name: 'کلمات درهم', icon: 'git-pull-request', playable: false },
+    { id: 'morse_code', name: 'کد مورس', icon: 'radio', playable: false },
+    { id: 'binary', name: 'باینری', icon: 'binary', playable: false },
+    { id: 'maze', name: 'هزارتو', icon: 'route', playable: false },
+    { id: 'sliding_puzzle', name: 'پازل متحرک', icon: 'move', playable: false },
+    { id: 'hangman', name: 'دار کشی', icon: 'gamepad-2', playable: false },
+    { id: 'wordle', name: 'وردل', icon: 'type', playable: false },
+    { id: '2048', name: '۲۰۴۸', icon: 'grid', playable: false },
+    { id: 'minesweeper', name: 'مین‌یاب', icon: 'bomb', playable: false },
+    { id: 'sokoban', name: 'انباری', icon: 'box', playable: false },
+    { id: 'tetris', name: 'تتریس', icon: 'blocks', playable: false },
+    { id: 'snake', name: 'مار', icon: 'wind', playable: false },
+    { id: 'pong', name: 'پینگ پنگ', icon: 'circle-dot', playable: false },
+    { id: 'breakout', name: 'آجرشکن', icon: 'square-stack', playable: false },
+    { id: 'aim_trainer', name: 'هدف‌گیری', icon: 'target', playable: false },
+    { id: 'stroop', name: 'تست استروپ', icon: 'paintbrush', playable: false },
+    { id: 'schulte', name: 'جدول شولته', icon: 'table', playable: false },
+    { id: 'simon', name: 'بازی سیمون', icon: 'music', playable: false },
+    { id: 'chess_puzzle', name: 'معمای شطرنج', icon: 'king', playable: false }
+];
+
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+function showAuthModal() { document.getElementById('auth-modal').classList.remove('hidden'); document.getElementById('auth-modal').classList.add('flex'); }
+function hideAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+
+async function doAuth() {
+    const u = document.getElementById('auth-username').value.trim();
+    const p = document.getElementById('auth-password').value;
+    if(!u || !p) return showToast('نام و رمز را وارد کنید');
+    
+    await fetchDb();
+    let user = dbData.users.find(x => x.username === u);
+    if(!user) {
+        user = { username: u, password: p, elo: 1000, wins: 0, losses: 0, history: [] };
+        dbData.users.push(user);
+        await saveDb();
+    } else if(user.password !== p) {
+        return showToast('رمز اشتباه است');
+    }
+    currentUser = u;
+    hideAuthModal();
+    initApp();
+}
+
+async function fetchDb() {
+    const res = await fetch('/api/db');
+    dbData = await res.json();
+    if(!dbData.users) dbData.users = [];
+    if(!dbData.lobbies) dbData.lobbies = [];
+    if(!dbData.matches) dbData.matches = [];
+}
+
+async function saveDb() {
+    await fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) });
+}
+
+function logout() { currentUser = null; document.getElementById('app').classList.add('hidden'); showAuthModal(); }
+
+function initApp() {
+    document.getElementById('app').classList.remove('hidden');
+    updateNav();
+    navigate('home');
+    lucide.createIcons();
+}
+
+function navigate(section) {
+    document.getElementById('section-home').classList.toggle('hidden', section !== 'home');
+    document.getElementById('section-profile').classList.toggle('hidden', section !== 'profile');
+    if(section === 'home') renderGames();
+    if(section === 'profile') renderProfile();
+    lucide.createIcons();
+}
+
+function getRankInfo(elo) {
+    if(elo < 1100) return { name: 'برونز', class: 'rank-bronze', min: 1000, max: 1100 };
+    if(elo < 1300) return { name: 'نقره‌ای', class: 'rank-silver', min: 1100, max: 1300 };
+    if(elo < 1600) return { name: 'طلایی', class: 'rank-gold', min: 1300, max: 1600 };
+    return { name: 'الماس', class: 'rank-diamond', min: 1600, max: 2000 };
+}
+
+function updateNav() {
+    const user = dbData.users.find(u => u.username === currentUser);
+    if(user) document.getElementById('nav-elo').textContent = user.elo || 1000;
+}
+
+function renderGames() {
+    const html = GAMES.map(g => `
+        <div class="game-card glass p-4 rounded-xl flex flex-col items-center text-center cursor-pointer relative ${!g.playable ? 'opacity-40 pointer-events-none' : ''}" onclick="findMatch('${g.id}')">
+            ${!g.playable ? '<span class="absolute top-2 left-2 text-[9px] bg-slate-700 px-2 py-0.5 rounded-full">به زودی</span>' : ''}
+            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3">
+                <i data-lucide="${g.icon}" class="w-6 h-6 text-indigo-400"></i>
+            </div>
+            <div class="font-bold text-sm">${g.name}</div>
+        </div>
+    `).join('');
+    document.getElementById('games-grid').innerHTML = html;
+    lucide.createIcons();
+}
+
+// --- Matchmaking ---
+async function findMatch(gameId) {
+    const teamSize = document.getElementById('team-size').value;
+    document.getElementById('lobby-modal').classList.remove('hidden');
+    document.getElementById('lobby-modal').classList.add('flex');
+    document.getElementById('lobby-info').textContent = `بازی: ${GAMES.find(g=>g.id===gameId).name} | حالت: ${teamSize}vs${teamSize}`;
+    
+    const res = await fetch('/api/matchmaking', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ username: currentUser, gameType: gameId, teamSize: parseInt(teamSize) })
+    });
+    const data = await res.json();
+    
+    if(data.status === 'waiting') {
+        pollingInterval = setInterval(async () => {
+            await fetchDb();
+            let match = dbData.matches.find(m => m.players.includes(currentUser));
+            if(match) {
+                clearInterval(pollingInterval);
+                startMatch(match);
+            }
+        }, 1500);
+    } else if(data.status === 'in_match') {
+        startMatch(data.match);
+    }
+}
+
+async function cancelMatchmaking() {
+    clearInterval(pollingInterval);
+    await fetchDb();
+    dbData.lobbies = dbData.lobbies.filter(l => !l.players.includes(currentUser));
+    await saveDb();
+    document.getElementById('lobby-modal').classList.add('hidden');
+    showToast('جستجو لغو شد');
+}
+
+// --- Match Logic ---
+async function startMatch(match) {
+    currentMatchId = match.id;
+    document.getElementById('lobby-modal').classList.add('hidden');
+    document.getElementById('match-modal').classList.remove('hidden');
+    document.getElementById('match-modal').classList.add('flex');
+    document.getElementById('m-title').textContent = GAMES.find(g=>g.id===match.gameType).name;
+    
+    renderMatchUI(match);
+    
+    pollingInterval = setInterval(async () => {
+        await fetchDb();
+        let m = dbData.matches.find(x => x.id === currentMatchId);
+        if(m) renderMatchUI(m);
+        else endMatch();
+    }, 1000);
+}
+
+function renderMatchUI(match) {
+    const userScore = match.state.scores[currentUser] || 0;
+    const enemy = match.players.find(p => p !== currentUser);
+    const enemyScore = match.state.scores[enemy] || 0;
+    
+    document.getElementById('m-score').textContent = userScore;
+    document.getElementById('m-enemy-score').textContent = enemyScore;
+    
+    const content = document.getElementById('m-content');
+    
+    if(match.state.winner) {
+        clearInterval(pollingInterval);
+        const isWin = match.state.winner === currentUser;
+        const isDraw = match.state.winner === 'draw';
+        
+        if(!match.state.savedStats) {
+            match.state.savedStats = true;
+            await saveDb();
+            await finishMatchRemote(match.id);
+        }
+        
+        content.innerHTML = `<div class="text-center py-8">
+            <i data-lucide="${isDraw ? 'meh' : (isWin ? 'smile' : 'frown')}" class="w-20 h-20 mx-auto mb-4 ${isDraw ? 'text-slate-400' : (isWin ? 'text-emerald-400' : 'text-rose-400')}"></i>
+            <h3 class="text-2xl font-bold mb-2">${isDraw ? 'مساوی شد!' : (isWin ? 'شما برنده شدید! (+15 ELO)' : 'شما باختید! (-10 ELO)')}</h3>
+            <button onclick="endMatch()" class="btn-brand px-6 py-2 rounded-lg mt-4">بستن و بازگشت</button>
+        </div>`;
+        lucide.createIcons();
+        return;
+    }
+    
+    if(match.gameType === 'math_battle') {
+        if(match.state.turn === currentUser) {
+            content.innerHTML = `<p class="mb-4 text-lg">نوبت شماست! جواب چند است؟</p>
+            <div class="text-5xl font-bold text-indigo-400 mb-6">${match.state.data.question} = ?</div>
+            <input type="number" id="math-answer" placeholder="جواب" class="w-32 text-center text-2xl font-bold mb-4" onkeydown="if(event.key==='Enter')submitMath()">
+            <button onclick="submitMath()" class="btn-brand px-6 py-2 rounded-lg font-bold">ارسال</button>`;
+            document.getElementById('math-answer').focus();
+        } else {
+            content.innerHTML = `<p class="text-slate-400">حریف در حال پاسخگویی است...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`;
+        }
+    } else if(match.gameType === 'tictactoe') {
+        const mySymbol = match.state.symbols[currentUser];
+        const isMyTurn = match.state.turn === currentUser;
+        content.innerHTML = `
+            <p class="mb-4 text-sm ${isMyTurn ? 'text-emerald-400' : 'text-slate-400'}">شما: ${mySymbol} | ${isMyTurn ? 'نوبت شماست' : 'نوبت حریف'}</p>
+            <div class="grid grid-cols-3 gap-2 w-64">
+                ${match.state.data.board.map((cell, i) => `
+                    <div onclick="${isMyTurn ? `placeTTT(${i})` : ''}" class="ttt-cell h-20 bg-slate-800 rounded-lg flex items-center justify-center text-4xl font-bold ${cell === 'X' ? 'text-emerald-400' : 'text-rose-400'} cursor-pointer">
+                        ${cell}
+                    </div>
+                `).join('')}
+            </div>`;
+    } else if(match.gameType === 'typing') {
+        content.innerHTML = `<p class="mb-4 text-sm text-slate-400">متن زیر را سریع و دقیق تایپ کنید:</p>
+        <div class="bg-slate-800 p-4 rounded-lg mb-4 text-lg font-bold">${match.state.data.targetText}</div>
+        <input type="text" id="typing-input" placeholder="اینجا تایپ کنید..." class="w-full max-w-md mb-4" oninput="checkTyping()">
+        <button onclick="submitTyping()" class="btn-brand px-6 py-2 rounded-lg font-bold">اتمام تایپ</button>`;
+    } else if(match.gameType === 'reaction') {
+        if(!match.state.startTime) {
+            if(match.state.turn === currentUser) {
+                match.state.startTime = Date.now() + Math.floor(Math.random() * 4000) + 2000;
+                saveDb();
+            }
+            content.innerHTML = `<p class="text-amber-400 text-lg">آماده باش...</p>`;
+        } else {
+            const remaining = match.state.startTime - Date.now();
+            if(remaining > 0) {
+                content.innerHTML = `<p class="text-amber-400 text-lg">آماده باش...</p>`;
+            } else {
+                content.innerHTML = `<p class="text-emerald-400 font-bold mb-4">الان!</p>
+                <button onclick="reactionClick()" class="bg-emerald-600 px-10 py-5 rounded-xl font-bold">کلیک کن!</button>`;
+            }
+        }
+    }
+    lucide.createIcons();
+}
+
+async function submitMath() {
+    const val = parseInt(document.getElementById('math-answer').value);
+    if(isNaN(val)) return;
+    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer', value: val }) });
+}
+async function placeTTT(index) {
+    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
+}
+async function submitTyping() {
+    const val = document.getElementById('typing-input').value;
+    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'finish', value: val }) });
+}
+async function reactionClick() {
+    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
+}
+
+async function finishMatchRemote(matchId) {
+    await fetch('/api/match/finish', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId }) });
+    await fetchDb();
+    updateNav();
+}
+
+async function endMatch() {
+    clearInterval(pollingInterval);
+    currentMatchId = null;
+    document.getElementById('match-modal').classList.add('hidden');
+    navigate('home');
+}
+
+async function leaveMatch() {
+    let match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match && !match.state.winner) {
+        const enemy = match.players.find(p => p !== currentUser);
+        match.state.winner = enemy;
+        await saveDb();
+        await finishMatchRemote(match.id);
+    }
+    endMatch();
+}
+
+// --- Profile ---
+function renderProfile() {
+    const user = dbData.users.find(u => u.username === currentUser);
+    if(!user) return;
+    
+    const elo = user.elo || 1000;
+    const wins = user.wins || 0;
+    const losses = user.losses || 0;
+    const totalGames = wins + losses;
+    const winrate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+    
+    document.getElementById('p-avatar').textContent = currentUser.charAt(0).toUpperCase();
+    document.getElementById('p-username').textContent = currentUser;
+    document.getElementById('p-elo').textContent = elo;
+    document.getElementById('p-wins').textContent = wins;
+    document.getElementById('p-losses').textContent = losses;
+    document.getElementById('p-winrate').textContent = winrate + '%';
+    
+    const rankInfo = getRankInfo(elo);
+    const rankBadge = document.getElementById('p-rank-badge');
+    rankBadge.className = `px-3 py-1 rounded-full text-xs font-bold bg-slate-800 ${rankInfo.class}`;
+    rankBadge.textContent = `رتبه: ${rankInfo.name}`;
+    
+    const eloPct = ((elo - rankInfo.min) / (rankInfo.max - rankInfo.min)) * 100;
+    document.getElementById('p-elo-bar').style.width = Math.min(100, eloPct) + '%';
+    
+    const historyHtml = (user.history || []).slice().reverse().map(h => {
+        const gameName = GAMES.find(g => g.id === h.game)?.name || h.game;
+        return `<div class="bg-slate-800/50 p-3 rounded-lg flex justify-between items-center">
+            <span class="text-sm font-medium">${gameName}</span>
+            <span class="text-xs font-bold px-2 py-1 rounded ${h.result === 'win' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${h.result === 'win' ? 'برد' : 'باخت'}</span>
+        </div>`;
+    }).join('') || '<p class="text-slate-400 text-center py-4">سابقه بازی وجود ندارد</p>';
+    document.getElementById('p-history').innerHTML = historyHtml;
+    
+    const achievements = [
+        { icon: 'baby', name: 'اولین قدم', unlocked: totalGames >= 1 },
+        { icon: 'star', name: 'تک ستاره', unlocked: wins >= 1 },
+        { icon: 'flame', name: 'برنده ۵ پیاپی', unlocked: false },
+        { icon: 'sword', name: 'جنگجو', unlocked: totalGames >= 10 },
+        { icon: 'gem', name: 'الماس', unlocked: elo >= 1600 },
+        { icon: 'crown', name: 'قهرمان', unlocked: elo >= 2000 }
+    ];
+    document.getElementById('p-achievements').innerHTML = achievements.map(a => `
+        <div class="bg-slate-800/50 p-3 rounded-xl text-center ${a.unlocked ? '' : 'opacity-30'}">
+            <i data-lucide="${a.icon}" class="w-6 h-6 mx-auto mb-1 ${a.unlocked ? 'text-amber-400' : 'text-slate-500'}"></i>
+            <div class="text-[10px] font-medium">${a.name}</div>
+        </div>
+    `).join('');
+    
+    lucide.createIcons();
+}
+
+window.onload = async function() {
+    await fetchDb();
+    showAuthModal();
+    lucide.createIcons();
+};
+</script>
+</body>
+</html>
