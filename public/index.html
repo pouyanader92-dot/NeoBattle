@@ -32,7 +32,6 @@
         .ttt-cell { transition: 0.2s; }
         .ttt-cell:hover { background: #334155; }
         
-        /* جلوگیری از باگ سیاه شدن صفحه */
         #app { display: none; }
         #lobby-modal { display: none; }
         #match-modal { display: none; }
@@ -43,7 +42,6 @@
 
 <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] hidden glass px-6 py-3 rounded-lg text-sm font-medium border-indigo-500"></div>
 
-<!-- Auth Modal -->
 <div id="auth-modal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-black/80">
     <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
         <div class="w-16 h-16 mx-auto bg-indigo-600 rounded-2xl flex items-center justify-center text-3xl font-bold mb-4">N</div>
@@ -57,7 +55,6 @@
     </div>
 </div>
 
-<!-- Matchmaking Modal -->
 <div id="lobby-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/90">
     <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
         <div class="w-20 h-20 mx-auto rounded-full bg-indigo-600 flex items-center justify-center mb-6 pulse-ring">
@@ -69,7 +66,6 @@
     </div>
 </div>
 
-<!-- Live Match Arena -->
 <div id="match-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/95">
     <div class="glass p-6 w-full max-w-3xl rounded-2xl">
         <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
@@ -93,7 +89,6 @@
     </div>
 </div>
 
-<!-- App Layout -->
 <div id="app" class="max-w-6xl mx-auto p-4 pb-20">
     <nav class="flex justify-between items-center mb-8 glass p-4 rounded-2xl sticky top-4 z-30">
         <div class="flex items-center gap-3 cursor-pointer" onclick="navigate('home')">
@@ -360,7 +355,8 @@ async function startMatch(match) {
     }, 1000);
 }
 
-function renderMatchUI(match) {
+// این تابع به async تغییر کرد تا ارور await رفع شود
+async function renderMatchUI(match) {
     const userScore = match.state.scores[currentUser] || 0;
     const enemy = match.players.find(p => p !== currentUser);
     const enemyScore = match.state.scores[enemy] || 0;
@@ -516,7 +512,6 @@ function renderProfile() {
     lucide.createIcons();
 }
 
-// بارگذاری اولیه دیتابیس بدون مسدود کردن صفحه
 window.onload = async function() {
     lucide.createIcons();
     try {
