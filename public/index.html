@@ -11,13 +11,11 @@
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['Vazirmatn', 'sans-serif'] } } } }
     </script>
     <style>
-        body { background: #0f172a; color: #e2e8f0; font-family: 'Vazirmatn', sans-serif; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        .glass { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(99, 102, 241, 0.2); }
-        .btn-brand { background: #6366f1; transition: 0.2s; }
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Vazirmatn', sans-serif; margin: 0; min-height: 100vh; }
+        .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(99, 102, 241, 0.3); }
+        .btn-brand { background: #6366f1; transition: 0.2s; color: #fff; border: none; cursor: pointer; }
         .btn-brand:hover { background: #4f46e5; box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
-        .btn-danger { background: #ef4444; transition: 0.2s; }
+        .btn-danger { background: #ef4444; transition: 0.2s; color: #fff; border: none; cursor: pointer; }
         .btn-danger:hover { background: #dc2626; }
         input, select { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
         input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
@@ -30,32 +28,37 @@
         .rank-bronze { color: #d97706; } .rank-silver { color: #94a3b8; } .rank-gold { color: #fbbf24; } .rank-diamond { color: #60a5fa; }
         
         .game-card { transition: 0.3s; }
-        .game-card:hover { transform: translateY(-5px); border-color: #6366f1; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.2); }
-        
+        .game-card:hover { transform: translateY(-5px); border-color: #6366f1 !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.2); }
         .ttt-cell { transition: 0.2s; }
         .ttt-cell:hover { background: #334155; }
+        
+        /* جلوگیری از باگ سیاه شدن صفحه */
+        #app { display: none; }
+        #lobby-modal { display: none; }
+        #match-modal { display: none; }
+        #auth-modal { display: flex; }
     </style>
 </head>
-<body class="min-h-screen">
+<body>
 
 <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] hidden glass px-6 py-3 rounded-lg text-sm font-medium border-indigo-500"></div>
 
 <!-- Auth Modal -->
-<div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80">
+<div id="auth-modal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-black/80">
     <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
         <div class="w-16 h-16 mx-auto bg-indigo-600 rounded-2xl flex items-center justify-center text-3xl font-bold mb-4">N</div>
         <h2 class="text-2xl font-bold mb-2">ورود به نئو بَتِل</h2>
         <p class="text-slate-400 text-sm mb-6">آرنا مسابقات فکری</p>
         <div class="space-y-4 text-right">
-            <div><label class="text-xs text-slate-400">نام کاربری</label><input id="auth-username" type="text" placeholder="Username..."></div>
-            <div><label class="text-xs text-slate-400">رمز عبور</label><input id="auth-password" type="password" placeholder="Password..." onkeydown="if(event.key==='Enter')doAuth()"></div>
+            <div><label class="text-xs text-slate-400 block mb-1">نام کاربری</label><input id="auth-username" type="text" placeholder="Username..."></div>
+            <div><label class="text-xs text-slate-400 block mb-1">رمز عبور</label><input id="auth-password" type="password" placeholder="Password..." onkeydown="if(event.key==='Enter')doAuth()"></div>
             <button onclick="doAuth()" class="w-full btn-brand py-3 rounded-lg font-bold">ورود / ثبت‌نام</button>
         </div>
     </div>
 </div>
 
 <!-- Matchmaking Modal -->
-<div id="lobby-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/90">
+<div id="lobby-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/90">
     <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
         <div class="w-20 h-20 mx-auto rounded-full bg-indigo-600 flex items-center justify-center mb-6 pulse-ring">
             <i data-lucide="loader" class="w-10 h-10 animate-spin"></i>
@@ -67,7 +70,7 @@
 </div>
 
 <!-- Live Match Arena -->
-<div id="match-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/95">
+<div id="match-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/95">
     <div class="glass p-6 w-full max-w-3xl rounded-2xl">
         <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
             <div class="text-center">
@@ -91,7 +94,7 @@
 </div>
 
 <!-- App Layout -->
-<div id="app" class="hidden max-w-6xl mx-auto p-4 pb-20">
+<div id="app" class="max-w-6xl mx-auto p-4 pb-20">
     <nav class="flex justify-between items-center mb-8 glass p-4 rounded-2xl sticky top-4 z-30">
         <div class="flex items-center gap-3 cursor-pointer" onclick="navigate('home')">
             <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center font-bold text-lg">N</div>
@@ -108,13 +111,11 @@
         </div>
     </nav>
 
-    <!-- Home / Arena -->
     <div id="section-home">
         <div class="text-center mb-10">
             <h1 class="text-3xl sm:text-4xl font-bold mb-2">آرنا مسابقات</h1>
             <p class="text-slate-400">یک بازی انتخاب کن، حریف پیدا کن و ELO خود را بالا ببر!</p>
         </div>
-        
         <div class="mb-8 flex flex-col sm:flex-row gap-4 items-center justify-center glass p-4 rounded-xl">
             <label class="text-sm text-slate-400">حالت رقابت:</label>
             <select id="team-size" class="w-full sm:w-40">
@@ -124,11 +125,9 @@
                 <option value="4">۴ نفره (4v4)</option>
             </select>
         </div>
-
         <div id="games-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
     </div>
 
-    <!-- Profile Panel -->
     <div id="section-profile" class="hidden">
         <div class="glass p-6 rounded-2xl mb-6">
             <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
@@ -144,7 +143,6 @@
                     </div>
                 </div>
             </div>
-            
             <div class="grid grid-cols-3 gap-4 text-center mb-6">
                 <div class="bg-slate-800/50 p-4 rounded-xl">
                     <div class="text-2xl font-bold text-emerald-400" id="p-wins">0</div>
@@ -160,7 +158,6 @@
                 </div>
             </div>
         </div>
-
         <div class="grid lg:grid-cols-2 gap-6">
             <div class="glass p-6 rounded-2xl">
                 <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 text-indigo-400"></i> تاریخچه بازی‌ها</h3>
@@ -180,7 +177,6 @@ let dbData = { users: [], lobbies: [], matches: [] };
 let pollingInterval = null;
 let currentMatchId = null;
 
-// 40 Games (4 Playable)
 const GAMES = [
     { id: 'math_battle', name: 'نبرد ریاضی', icon: 'calculator', playable: true },
     { id: 'tictactoe', name: 'دوز بازی', icon: 'grid-3x3', playable: true },
@@ -225,8 +221,8 @@ const GAMES = [
 ];
 
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
-function showAuthModal() { document.getElementById('auth-modal').classList.remove('hidden'); document.getElementById('auth-modal').classList.add('flex'); }
-function hideAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+function showAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
+function hideAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
 
 async function doAuth() {
     const u = document.getElementById('auth-username').value.trim();
@@ -244,6 +240,7 @@ async function doAuth() {
     }
     currentUser = u;
     hideAuthModal();
+    document.getElementById('app').style.display = 'block';
     initApp();
 }
 
@@ -270,10 +267,9 @@ async function saveDb() {
     }
 }
 
-function logout() { currentUser = null; document.getElementById('app').classList.add('hidden'); showAuthModal(); }
+function logout() { currentUser = null; document.getElementById('app').style.display = 'none'; showAuthModal(); }
 
 function initApp() {
-    document.getElementById('app').classList.remove('hidden');
     updateNav();
     navigate('home');
     lucide.createIcons();
@@ -313,11 +309,9 @@ function renderGames() {
     lucide.createIcons();
 }
 
-// --- Matchmaking ---
 async function findMatch(gameId) {
     const teamSize = document.getElementById('team-size').value;
-    document.getElementById('lobby-modal').classList.remove('hidden');
-    document.getElementById('lobby-modal').classList.add('flex');
+    document.getElementById('lobby-modal').style.display = 'flex';
     document.getElementById('lobby-info').textContent = `بازی: ${GAMES.find(g=>g.id===gameId).name} | حالت: ${teamSize}vs${teamSize}`;
     
     const res = await fetch('/api/matchmaking', {
@@ -346,16 +340,14 @@ async function cancelMatchmaking() {
     await fetchDb();
     dbData.lobbies = dbData.lobbies.filter(l => !l.players.includes(currentUser));
     await saveDb();
-    document.getElementById('lobby-modal').classList.add('hidden');
+    document.getElementById('lobby-modal').style.display = 'none';
     showToast('جستجو لغو شد');
 }
 
-// --- Match Logic ---
 async function startMatch(match) {
     currentMatchId = match.id;
-    document.getElementById('lobby-modal').classList.add('hidden');
-    document.getElementById('match-modal').classList.remove('hidden');
-    document.getElementById('match-modal').classList.add('flex');
+    document.getElementById('lobby-modal').style.display = 'none';
+    document.getElementById('match-modal').style.display = 'flex';
     document.getElementById('m-title').textContent = GAMES.find(g=>g.id===match.gameType).name;
     
     renderMatchUI(match);
@@ -383,10 +375,10 @@ function renderMatchUI(match) {
         const isWin = match.state.winner === currentUser;
         const isDraw = match.state.winner === 'draw';
         
-        if(!match.state.savedStats) {
-            match.state.savedStats = true;
-            await saveDb();
-            await finishMatchRemote(match.id);
+        if(!match.finished) {
+            await fetch('/api/match/finish', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ matchId: match.id }) });
+            await fetchDb();
+            updateNav();
         }
         
         content.innerHTML = `<div class="text-center py-8">
@@ -423,13 +415,12 @@ function renderMatchUI(match) {
     } else if(match.gameType === 'typing') {
         content.innerHTML = `<p class="mb-4 text-sm text-slate-400">متن زیر را سریع و دقیق تایپ کنید:</p>
         <div class="bg-slate-800 p-4 rounded-lg mb-4 text-lg font-bold">${match.state.data.targetText}</div>
-        <input type="text" id="typing-input" placeholder="اینجا تایپ کنید..." class="w-full max-w-md mb-4" oninput="checkTyping()">
+        <input type="text" id="typing-input" placeholder="اینجا تایپ کنید..." class="w-full max-w-md mb-4">
         <button onclick="submitTyping()" class="btn-brand px-6 py-2 rounded-lg font-bold">اتمام تایپ</button>`;
     } else if(match.gameType === 'reaction') {
         if(!match.state.startTime) {
             if(match.state.turn === currentUser) {
-                match.state.startTime = Date.now() + Math.floor(Math.random() * 4000) + 2000;
-                saveDb();
+                fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'init' }) });
             }
             content.innerHTML = `<p class="text-amber-400 text-lg">آماده باش...</p>`;
         } else {
@@ -461,31 +452,18 @@ async function reactionClick() {
     await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
 }
 
-async function finishMatchRemote(matchId) {
-    await fetch('/api/match/finish', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId }) });
-    await fetchDb();
-    updateNav();
-}
-
 async function endMatch() {
     clearInterval(pollingInterval);
     currentMatchId = null;
-    document.getElementById('match-modal').classList.add('hidden');
+    document.getElementById('match-modal').style.display = 'none';
     navigate('home');
 }
 
 async function leaveMatch() {
-    let match = dbData.matches.find(m => m.id === currentMatchId);
-    if(match && !match.state.winner) {
-        const enemy = match.players.find(p => p !== currentUser);
-        match.state.winner = enemy;
-        await saveDb();
-        await finishMatchRemote(match.id);
-    }
+    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'surrender' }) });
     endMatch();
 }
 
-// --- Profile ---
 function renderProfile() {
     const user = dbData.users.find(u => u.username === currentUser);
     if(!user) return;
@@ -538,9 +516,8 @@ function renderProfile() {
     lucide.createIcons();
 }
 
-// مهم‌ترین بخش: نمایش سریع پنجره ورود برای جلوگیری از صفحه سیاه
+// بارگذاری اولیه دیتابیس بدون مسدود کردن صفحه
 window.onload = async function() {
-    showAuthModal(); 
     lucide.createIcons();
     try {
         await fetchDb();
