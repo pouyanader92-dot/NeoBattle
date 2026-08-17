@@ -1,236 +1,681 @@
-const express = require('express');
-const path = require('path');
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoBattle - آرنا رقابت فکری</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Vazirmatn', 'sans-serif'] } } } }
+    </script>
+    <style>
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Vazirmatn', sans-serif; margin: 0; min-height: 100vh; }
+        .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(99, 102, 241, 0.3); }
+        .btn-brand { background: #6366f1; transition: 0.2s; color: #fff; border: none; cursor: pointer; }
+        .btn-brand:hover { background: #4f46e5; box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
+        .btn-danger { background: #ef4444; transition: 0.2s; color: #fff; border: none; cursor: pointer; }
+        .btn-danger:hover { background: #dc2626; }
+        input, select { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 0.75rem; border-radius: 0.5rem; width: 100%; transition: 0.2s; font-size: 1rem; min-height: 48px; }
+        input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); } 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); } }
+        .pulse-ring { animation: pulse-ring 1.5s infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        
+        .game-card { transition: 0.3s; }
+        .game-card:hover { transform: translateY(-5px); border-color: #6366f1 !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.2); }
+        .ttt-cell { transition: 0.2s; }
+        .ttt-cell:hover { background: #334155; }
+        
+        #app { display: none; }
+        #lobby-modal, #match-modal, #chat-modal { display: none; }
+        #auth-modal { display: flex; }
+        
+        .chat-box::-webkit-scrollbar { width: 4px; }
+        .chat-box::-webkit-scrollbar-thumb { background: #334155; }
+    </style>
+</head>
+<body>
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+<div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] hidden glass px-6 py-3 rounded-lg text-sm font-medium border-indigo-500"></div>
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+<div id="auth-modal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-black/80">
+    <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
+        <div class="w-16 h-16 mx-auto bg-indigo-600 rounded-2xl flex items-center justify-center text-3xl font-bold mb-4">N</div>
+        <h2 class="text-2xl font-bold mb-2">ورود به نئو بَتِل</h2>
+        <div class="space-y-4 text-right">
+            <div><label class="text-xs text-slate-400 block mb-1">نام کاربری</label><input id="auth-username" type="text" placeholder="Username..."></div>
+            <div><label class="text-xs text-slate-400 block mb-1">رمز عبور</label><input id="auth-password" type="password" placeholder="Password..." onkeydown="if(event.key==='Enter')doAuth()"></div>
+            <button onclick="doAuth()" class="w-full btn-brand py-3 rounded-lg font-bold">ورود / ثبت‌نام</button>
+        </div>
+    </div>
+</div>
 
-const BIN_ID = process.env.JSONBIN_BIN_ID;
-const API_KEY = process.env.JSONBIN_API_KEY;
-const DB_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+<div id="lobby-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/90">
+    <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
+        <div class="w-20 h-20 mx-auto rounded-full bg-indigo-600 flex items-center justify-center mb-6 pulse-ring">
+            <i data-lucide="loader" class="w-10 h-10 animate-spin"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2">در جستجوی حریف...</h3>
+        <p id="lobby-info" class="text-slate-400 mb-6"></p>
+        <button onclick="cancelMatchmaking()" class="btn-danger px-6 py-2 rounded-lg font-bold">لغو جستجو</button>
+    </div>
+</div>
 
-const defaultDb = { users: [], lobbies: [], matches: [] };
-const TRIVIA_QUESTIONS = [
-    { q: "پایتخت ایران کجاست؟", opts: ["تهران", "شیراز", "اصفهان", "مشهد"], ans: 0 },
-    { q: "۵ ضرب در ۶ چنده؟", opts: ["۳۵", "۴۰", "۳۰", "۲۵"], ans: 2 },
-    { q: "آب مخفف کدام سیاره است؟", opts: ["مرکری", "زحل", "ناهید", "مشتری"], ans: 3 },
-    { q: "طول رودخانه نیل چقدر است؟", opts: ["۶۶۵۰ کیلومتر", "۵۰۰۰ کیلومتر", "۴۰۰۰ کیلومتر", "۳۰۰۰ کیلومتر"], ans: 0 },
-    { q: "بزرگترین سیاره منظومه شمسی کدام است؟", opts: ["زمین", "مشتری", "زحل", "مریخ"], ans: 1 },
-    { q: "نویسنده کتاب شاهنامه کیست؟", opts: ["سعدی", "حافظ", "فردوسی", "نظامی"], ans: 2 }
+<div id="match-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/95">
+    <div class="glass p-6 w-full max-w-3xl rounded-2xl">
+        <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+            <div class="text-center"><div class="text-xs text-slate-400">شما</div><div class="text-2xl font-bold text-emerald-400" id="m-score">0</div></div>
+            <div class="text-center"><h2 id="m-title" class="text-xl font-bold">نبرد</h2><div class="text-xs text-slate-500" id="m-subtitle"></div></div>
+            <div class="text-center"><div class="text-xs text-slate-400">حریف</div><div class="text-2xl font-bold text-rose-400" id="m-enemy-score">0</div></div>
+        </div>
+        <div id="m-content" class="min-h-[250px] flex flex-col items-center justify-center text-center"></div>
+        <div class="mt-6 text-center"><button onclick="leaveMatch()" class="text-slate-400 hover:text-red-400 text-sm">ترک بازی</button></div>
+    </div>
+</div>
+
+<div id="chat-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/90">
+    <div class="glass p-6 w-full max-w-md rounded-2xl flex flex-col h-[80vh]">
+        <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+            <h2 id="chat-title" class="text-lg font-bold">چت</h2>
+            <button onclick="closeChat()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div id="chat-messages" class="chat-box flex-1 overflow-y-auto space-y-2 mb-4 pr-2"></div>
+        <div class="flex gap-2">
+            <input id="chat-input" type="text" placeholder="پیام بنویس..." onkeydown="if(event.key==='Enter')sendChatMessage()">
+            <button onclick="sendChatMessage()" class="btn-brand px-4 py-2 rounded-lg font-bold">ارسال</button>
+        </div>
+    </div>
+</div>
+
+<div id="app" class="max-w-6xl mx-auto p-4 pb-20">
+    <nav class="flex justify-between items-center mb-8 glass p-4 rounded-2xl sticky top-4 z-30">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="navigate('home')">
+            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center font-bold text-lg">N</div>
+            <span class="font-bold text-xl hidden sm:block">NeoBattle</span>
+        </div>
+        <div class="flex items-center gap-4 sm:gap-6">
+            <div class="flex items-center gap-2 text-amber-400 font-bold"><i data-lucide="trophy" class="w-5 h-5"></i><span id="nav-elo">0</span></div>
+            <button onclick="navigate('home')" class="text-sm text-slate-300 hover:text-white">آرنا</button>
+            <button onclick="navigate('social')" class="text-sm text-slate-300 hover:text-white flex items-center gap-1">کلن <span id="notif-dot" class="hidden w-2 h-2 bg-red-500 rounded-full"></span></button>
+            <button onclick="navigate('profile')" class="text-sm text-slate-300 hover:text-white">پنل کاربری</button>
+            <button onclick="logout()" class="text-slate-400 hover:text-red-400 p-2"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+        </div>
+    </nav>
+
+    <div id="section-home">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl sm:text-4xl font-bold mb-2">آرنا مسابقات</h1>
+            <p class="text-slate-400">مهارت‌های شناختی خود را محک بزن و ELO خود را بالا ببر!</p>
+        </div>
+        <div class="mb-8 flex flex-col sm:flex-row gap-4 items-center justify-center glass p-4 rounded-xl">
+            <label class="text-sm text-slate-400">حالت بازی:</label>
+            <select id="team-size" class="w-full sm:w-40">
+                <option value="1">۱ نفره (1v1)</option>
+                <option value="2">۲ نفره (2v2)</option>
+                <option value="3">۳ نفره (3v3)</option>
+                <option value="4">۴ نفره (4v4)</option>
+            </select>
+            <button id="bot-toggle" onclick="toggleBotMode()" class="btn-brand px-4 py-3 rounded-lg font-bold flex items-center gap-2 text-sm">
+                <i data-lucide="bot" class="w-5 h-5"></i> بازی با بات
+            </button>
+        </div>
+        <div id="games-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+    </div>
+
+    <div id="section-social" class="hidden">
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="glass p-6 rounded-2xl">
+                <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-indigo-400"></i> نئو کلن (گلوبال)</h3>
+                <button onclick="openChat('clan')" class="w-full btn-brand py-2 rounded-lg font-bold mb-4">ورود به چت کلن</button>
+                <div class="text-xs text-slate-400 mb-2">اعضای آنلاین (نمایش بر اساس آخرین فعالیت):</div>
+                <div id="clan-members" class="space-y-2 max-h-60 overflow-y-auto pr-2"></div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i> دوستان شما</h3>
+                <div class="flex gap-2 mb-4">
+                    <input id="friend-input" type="text" placeholder="نام کاربری دوست...">
+                    <button onclick="sendFriendRequest()" class="btn-brand px-4 py-2 rounded-lg font-bold">افزودن</button>
+                </div>
+                <div id="friend-requests" class="mb-4"></div>
+                <div id="friends-list" class="space-y-2 max-h-60 overflow-y-auto pr-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="section-profile" class="hidden">
+        <div class="glass p-6 rounded-2xl mb-6">
+            <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
+                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl font-bold" id="p-avatar">N</div>
+                <div class="flex-1 text-center sm:text-right">
+                    <h2 id="p-username" class="text-2xl font-bold mb-1">کاربر</h2>
+                    <span class="text-amber-400 font-bold"><span id="p-elo">1000</span> ELO</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 text-center mb-6">
+                <div class="bg-slate-800/50 p-4 rounded-xl"><div class="text-2xl font-bold text-emerald-400" id="p-wins">0</div><div class="text-xs text-slate-400 mt-1">برد</div></div>
+                <div class="bg-slate-800/50 p-4 rounded-xl"><div class="text-2xl font-bold text-rose-400" id="p-losses">0</div><div class="text-xs text-slate-400 mt-1">باخت</div></div>
+                <div class="bg-slate-800/50 p-4 rounded-xl"><div class="text-2xl font-bold text-amber-400" id="p-winrate">0%</div><div class="text-xs text-slate-400 mt-1">نرخ برد</div></div>
+            </div>
+        </div>
+        <div class="glass p-6 rounded-2xl">
+            <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 text-indigo-400"></i> تاریخچه بازی‌ها</h3>
+            <div id="p-history" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentUser = null;
+let dbData = { users: [], lobbies: [], matches: [], clanMessages: [], dms: [], challenges: [] };
+let pollingInterval = null;
+let currentMatchId = null;
+let isBotMode = false;
+let botTimer = null;
+let localBotMatch = null;
+let currentChatTarget = null;
+let chatPolling = null;
+let socialPolling = null;
+
+// 40 Games all playable & mapped to 5 cognitive engines
+const GAMES = [
+    // Engine: math_battle (Processing Speed & Calculation)
+    { id: 'math_battle', name: 'نبرد ریاضی', icon: 'calculator', desc: 'افزایش سرعت پردازش ذهنی' },
+    { id: 'math_battle:sudoku', name: 'سودوکو', icon: 'layout-grid', desc: 'تقویت منطق و استدلال' },
+    { id: 'math_battle:2048', name: '۲۰۴۸', icon: 'grid', desc: 'بهبود برنامه‌ریزی راهبردی' },
+    { id: 'math_battle:math_seq', name: 'دنباله اعداد', icon: 'list-ordered', desc: 'تقویت الگوهای عددی' },
+    { id: 'math_battle:binary', name: 'باینری', icon: 'binary', desc: 'آشنایی با منطق دیجیتال' },
+    { id: 'math_battle:minesweeper', name: 'مین‌یاب', icon: 'bomb', desc: 'تحلیل ریسک و احتمال' },
+    
+    // Engine: tictactoe (Strategic Thinking & Foresight)
+    { id: 'tictactoe:tictactoe', name: 'دوز بازی', icon: 'grid-3x3', desc: 'توسعه تفکر استراتژیک' },
+    { id: 'tictactoe:chess', name: 'شطرنج سریع', icon: 'crown', desc: 'تقویت بینش و دوراندیشی' },
+    { id: 'tictactoe:connect4', name: 'چهار در صف', icon: 'circle', desc: 'تسلط بر الگوهای فضایی' },
+    { id: 'tictactoe:checkers', name: 'دامه', icon: 'square', desc: 'تقویت تفکر تاکتیکی' },
+    { id: 'tictactoe:chess_puzzle', name: 'معمای شطرنج', icon: 'king', desc: 'بهبود حل مسئله' },
+    { id: 'tictactoe:sokoban', name: 'انباری', icon: 'box', desc: 'تقویت درک فضایی' },
+    
+    // Engine: typing (Linguistic & Vocabulary)
+    { id: 'typing:typing', name: 'تایپ سریع', icon: 'keyboard', desc: 'افزایش سرعت و دقت تایپ' },
+    { id: 'typing:wordle', name: 'وردل', icon: 'type', desc: 'تقویت دایره لغات' },
+    { id: 'typing:hangman', name: 'دار کشی', icon: 'gamepad-2', desc: 'بازیابی واژگان از حافظه' },
+    { id: 'typing:wordhunt', name: 'شکار کلمات', icon: 'search', desc: 'سرعت در بازیابی کلمات' },
+    { id: 'typing:anagram', name: 'جایگذاری حروف', icon: 'shuffle', desc: 'انعطاف‌پذیری زبانی' },
+    { id: 'typing:word_scramble', name: 'کلمات درهم', icon: 'git-pull-request', desc: 'تحلیل ساختار کلمات' },
+    { id: 'typing:crossword', name: 'جدول کلمات', icon: 'book-open', desc: 'غنی‌سازی دایره لغات' },
+    
+    // Engine: reaction (Reflexes & Focus)
+    { id: 'reaction:reaction', name: 'زمان واکنش', icon: 'zap', desc: 'بهبود سرعت عصب و عضله' },
+    { id: 'reaction:aim_trainer', name: 'هدف‌گیری', icon: 'target', desc: 'افزایش دقت چشمی' },
+    { id: 'reaction:pong', name: 'پینگ پنگ', icon: 'circle-dot', desc: 'هماهنگی دست و چشم' },
+    { id: 'reaction:breakout', name: 'آجرشکن', icon: 'square-stack', desc: 'پیش‌بینی مسیر حرکت' },
+    { id: 'reaction:snake', name: 'مار', icon: 'wind', desc: 'مدیریت چند وظیفه‌ای' },
+    { id: 'reaction:tetris', name: 'تتریس', icon: 'blocks', desc: 'سرعت تصمیم‌گیری فضایی' },
+    { id: 'reaction:maze', name: 'هزارتو', icon: 'route', desc: 'تقویت جهت‌یابی ذهنی' },
+    { id: 'reaction:sliding_puzzle', name: 'پازل متحرک', icon: 'move', desc: 'حل مسئله گام‌به‌گام' },
+    
+    // Engine: trivia (Memory & Knowledge Retrieval)
+    { id: 'trivia:trivia', name: 'دانستنی‌ها', icon: 'help-circle', desc: 'فراخوانی اطلاعات از حافظه بلندمدت' },
+    { id: 'trivia:geography', name: 'جغرافیا', icon: 'globe', desc: 'تقویت حافظه مکانی' },
+    { id: 'trivia:flag_quiz', name: 'پرچم‌ها', icon: 'flag', desc: 'یادآوری تصویر' },
+    { id: 'trivia:logic_puzzle', name: 'معمای منطق', icon: 'puzzle', desc: 'استنتاج و استدلال منطقی' },
+    { id: 'trivia:riddles', name: 'چیستان', icon: 'meh', desc: 'تفکر جانبی و خلاقانه' },
+    
+    // Engine: memory (Working Memory & Attention)
+    { id: 'reaction:memory', name: 'حافظه تصویری', icon: 'image', desc: 'تقویت حافظه کوتاه‌مدت' },
+    { id: 'reaction:color_match', name: 'تطبیق رنگ', icon: 'palette', desc: 'افزایش تمرکز انتخابی' },
+    { id: 'reaction:pattern', name: 'الگوی تصویری', icon: 'pattern', desc: 'شناخت الگوهای بصری' },
+    { id: 'reaction:odd_one_out', name: 'پیدا کن متفاوت را', icon: 'eye', desc: 'بهبود تفکیک جزئیات' },
+    { id: 'reaction:morse_code', name: 'کد مورس', icon: 'radio', desc: 'رمزگشایی و شنیداری' },
+    { id: 'reaction:stroop', name: 'تست استروپ', icon: 'paintbrush', desc: 'کنترل بازداشت شناختی' },
+    { id: 'reaction:schulte', name: 'جدول شولته', icon: 'table', desc: 'گسترش میدان دید' },
+    { id: 'reaction:simon', name: 'بازی سیمون', icon: 'music', desc: 'تقویت حافظه توالی‌دار' }
 ];
 
-async function getDb() {
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+function showAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
+function hideAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function toggleBotMode() {
+    isBotMode = !isBotMode;
+    const btn = document.getElementById('bot-toggle');
+    if(isBotMode) { btn.innerHTML = '<i data-lucide="users" class="w-5 h-5"></i> بازی آنلاین'; btn.classList.remove('btn-brand'); btn.classList.add('btn-danger'); }
+    else { btn.innerHTML = '<i data-lucide="bot" class="w-5 h-5"></i> بازی با بات'; btn.classList.remove('btn-danger'); btn.classList.add('btn-brand'); }
+    lucide.createIcons();
+}
+
+async function doAuth() {
+    const u = document.getElementById('auth-username').value.trim();
+    const p = document.getElementById('auth-password').value;
+    if(!u || !p) return showToast('نام و رمز را وارد کنید');
+    
+    await fetchDb();
+    let user = dbData.users.find(x => x.username === u);
+    if(!user) {
+        user = { username: u, password: p, elo: 1000, wins: 0, losses: 0, history: [], friends: [], friendRequests: [] };
+        dbData.users.push(user);
+        await saveDb();
+    } else if(user.password !== p) return showToast('رمز اشتباه است');
+    
+    currentUser = u;
+    hideAuthModal();
+    document.getElementById('app').style.display = 'block';
+    initApp();
+}
+
+async function fetchDb() {
     try {
-        const response = await fetch(DB_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
-        if (!response.ok) throw new Error('Fetch failed');
-        const data = await response.json();
-        return data.record;
-    } catch (err) {
-        console.error('GET Error:', err.message);
-        return defaultDb;
+        const res = await fetch('/api/db');
+        dbData = await res.json();
+        if(!dbData.users) dbData.users = [];
+        if(!dbData.matches) dbData.matches = [];
+        if(!dbData.challenges) dbData.challenges = [];
+        if(!dbData.clanMessages) dbData.clanMessages = [];
+        if(!dbData.dms) dbData.dms = [];
+    } catch (e) { console.error('Fetch DB Error:', e); }
+}
+
+async function saveDb() {
+    try { await fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) }); } 
+    catch (e) { console.error('Save DB Error:', e); }
+}
+
+function logout() { 
+    currentUser = null; 
+    clearInterval(socialPolling);
+    document.getElementById('app').style.display = 'none'; 
+    showAuthModal(); 
+}
+
+function initApp() {
+    updateNav();
+    navigate('home');
+    lucide.createIcons();
+    startSocialPolling();
+}
+
+function navigate(section) {
+    document.getElementById('section-home').classList.toggle('hidden', section !== 'home');
+    document.getElementById('section-social').classList.toggle('hidden', section !== 'social');
+    document.getElementById('section-profile').classList.toggle('hidden', section !== 'profile');
+    if(section === 'home') renderGames();
+    if(section === 'social') renderSocial();
+    if(section === 'profile') renderProfile();
+    lucide.createIcons();
+}
+
+function updateNav() {
+    const user = dbData.users.find(u => u.username === currentUser);
+    if(user) document.getElementById('nav-elo').textContent = user.elo || 1000;
+}
+
+function renderGames() {
+    const html = GAMES.map(g => `
+        <div class="game-card glass p-4 rounded-xl flex flex-col items-center text-center cursor-pointer relative" onclick="findMatch('${g.id}')">
+            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3">
+                <i data-lucide="${g.icon}" class="w-6 h-6 text-indigo-400"></i>
+            </div>
+            <div class="font-bold text-sm mb-1">${g.name}</div>
+            <div class="text-[10px] text-slate-400">${g.desc}</div>
+        </div>
+    `).join('');
+    document.getElementById('games-grid').innerHTML = html;
+    lucide.createIcons();
+}
+
+// --- Social Logic ---
+function startSocialPolling() {
+    socialPolling = setInterval(async () => {
+        await fetchDb();
+        checkChallenges();
+        if(document.getElementById('section-social').classList.contains('block')) renderSocial();
+        if(document.getElementById('chat-modal').style.display === 'flex') loadChatMessages(currentChatTarget);
+    }, 2000);
+}
+
+function renderSocial() {
+    const user = dbData.users.find(u => u.username === currentUser);
+    if(!user) return;
+
+    const reqHtml = (user.friendRequests || []).map(req => `
+        <div class="flex justify-between items-center bg-amber-500/10 p-2 rounded-lg mb-2">
+            <span class="text-sm">${req}</span>
+            <button onclick="acceptFriend('${req}')" class="text-xs btn-brand px-3 py-1 rounded-lg">تایید</button>
+        </div>
+    `).join('');
+    document.getElementById('friend-requests').innerHTML = reqHtml ? '<div class="text-xs text-amber-400 mb-2">درخواست‌های دوستی:</div>' + reqHtml : '';
+
+    const fHtml = (user.friends || []).map(f => `
+        <div class="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg mb-2">
+            <span class="text-sm flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-indigo-400"></i> ${f}</span>
+            <div class="flex gap-1">
+                <button onclick="openChat('${f}')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg">چت</button>
+                <button onclick="challengeFriend('${f}')" class="text-xs btn-brand px-3 py-1 rounded-lg">چالش</button>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('friends-list').innerHTML = fHtml || '<p class="text-slate-400 text-center py-4 text-sm">لیست دوستان خالی است</p>';
+
+    const members = dbData.users.slice(0, 10).map(u => `<div class="text-sm text-slate-300 py-1 border-b border-slate-700">${u.username}</div>`).join('');
+    document.getElementById('clan-members').innerHTML = members;
+}
+
+async function sendFriendRequest() {
+    const target = document.getElementById('friend-input').value.trim();
+    if(!target || target === currentUser) return;
+    const res = await fetch('/api/social/addfriend', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, target }) });
+    const data = await res.json();
+    if(data.success) { showToast('درخواست دوستی ارسال شد'); document.getElementById('friend-input').value = ''; }
+    else showToast(data.error);
+}
+
+async function acceptFriend(target) {
+    await fetch('/api/social/acceptfriend', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, target }) });
+    showToast('دوست اضافه شد');
+}
+
+function openChat(target) {
+    currentChatTarget = target;
+    document.getElementById('chat-title').textContent = target === 'clan' ? 'چت نئو کلن' : `چت با ${target}`;
+    openModal('chat-modal');
+    loadChatMessages(target);
+}
+
+function closeChat() {
+    currentChatTarget = null;
+    closeModal('chat-modal');
+}
+
+async function loadChatMessages(target) {
+    let msgs = [];
+    if(target === 'clan') msgs = dbData.clanMessages || [];
+    else {
+        const dmId = [currentUser, target].sort().join('_');
+        const dm = dbData.dms.find(d => d.id === dmId);
+        if(dm) msgs = dm.messages;
+    }
+    const html = msgs.map(m => `
+        <div class="bg-slate-800/70 p-2 rounded-lg ${m.from === currentUser ? 'border-r-2 border-emerald-500' : 'border-r-2 border-indigo-500'}">
+            <div class="text-xs font-bold ${m.from === currentUser ? 'text-emerald-400' : 'text-indigo-400'}">${m.from}</div>
+            <div class="text-sm text-slate-200">${m.text}</div>
+            <div class="text-[10px] text-slate-500 text-left">${m.date}</div>
+        </div>
+    `).join('');
+    const box = document.getElementById('chat-messages');
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const text = document.getElementById('chat-input').value.trim();
+    if(!text) return;
+    document.getElementById('chat-input').value = '';
+    await fetch('/api/social/sendmessage', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from: currentUser, to: currentChatTarget, text }) });
+    loadChatMessages(currentChatTarget);
+}
+
+async function checkChallenges() {
+    let myChal = dbData.challenges.find(c => c.to === currentUser);
+    if(myChal) {
+        dbData.challenges = dbData.challenges.filter(c => c.id !== myChal.id);
+        await saveDb();
+        if(confirm(`${myChal.from} شما را به بازی ${GAMES.find(g=>g.id===myChal.gameType)?.name || myChal.gameType} چالش کرد! می‌پذیرید؟`)) {
+            const res = await fetch('/api/social/acceptchallenge', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, challengeId: myChal.id }) });
+            const data = await res.json();
+            if(data.status === 'in_match') startMatch(data.match);
+        }
     }
 }
 
-async function saveDb(data) {
-    try {
-        const response = await fetch(DB_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Save failed');
-        return true;
-    } catch (err) {
-        console.error('POST Error:', err.message);
-        return false;
-    }
+async function challengeFriend(friend) {
+    const gameId = prompt('شناسه بازی را وارد کنید (مثلا: math_battle یا tictactoe:tictactoe):', 'math_battle');
+    if(!gameId) return;
+    await fetch('/api/social/challenge', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ from: currentUser, to: friend, gameType: gameId }) });
+    showToast(`چالش برای ${friend} ارسال شد!`);
 }
 
-app.get('/api/db', async (req, res) => {
-    const db = await getDb();
-    if (!db.users) db.users = [];
-    if (!db.lobbies) db.lobbies = [];
-    if (!db.matches) db.matches = [];
-    res.json(db);
-});
+// --- Matchmaking ---
+async function findMatch(gameId) {
+    if(isBotMode) return startBotMatch(gameId);
 
-app.post('/api/db', async (req, res) => {
-    await saveDb(req.body);
-    res.json({ success: true });
-});
-
-app.post('/api/matchmaking', async (req, res) => {
-    const { username, gameType, teamSize } = req.body;
-    let db = await getDb();
-    if (!db.matches) db.matches = [];
-    if (!db.lobbies) db.lobbies = [];
+    const teamSize = document.getElementById('team-size').value;
+    openModal('lobby-modal');
+    document.getElementById('lobby-info').textContent = `بازی: ${GAMES.find(g=>g.id===gameId).name} | حالت: ${teamSize}vs${teamSize}`;
     
-    let existingMatch = db.matches.find(m => m.players.includes(username));
-    if (existingMatch) return res.json({ status: 'in_match', match: existingMatch });
+    const res = await fetch('/api/matchmaking', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, gameType: gameId, teamSize: parseInt(teamSize) }) });
+    const data = await res.json();
     
-    let existingLobby = db.lobbies.find(l => l.players.includes(username));
-    if (existingLobby) return res.json({ status: 'waiting', lobby: existingLobby });
+    if(data.status === 'waiting') {
+        pollingInterval = setInterval(async () => {
+            await fetchDb();
+            let match = dbData.matches.find(m => m.players.includes(currentUser));
+            if(match) { clearInterval(pollingInterval); startMatch(match); }
+        }, 2000);
+    } else if(data.status === 'in_match') startMatch(data.match);
+}
 
-    let lobby = db.lobbies.find(l => l.gameType === gameType && l.teamSize === teamSize && l.players.length < (teamSize * 2));
-    if (lobby) {
-        lobby.players.push(username);
-        if (lobby.players.length === lobby.teamSize * 2) {
-            const newMatch = {
-                id: 'match_' + Date.now(),
-                gameType: gameType,
-                players: lobby.players,
-                state: { scores: {}, turn: lobby.players[0], data: {}, winner: null, startTime: null, finished: false },
-                createdAt: Date.now()
-            };
-            lobby.players.forEach(p => newMatch.state.scores[p] = 0);
-            if (gameType === 'math_battle') {
-                const a = Math.floor(Math.random() * 20) + 1, b = Math.floor(Math.random() * 20) + 1;
-                newMatch.state.data = { question: `${a} + ${b}`, currentAnswer: a+b };
-            } else if (gameType === 'tictactoe') {
-                newMatch.state.data = { board: ["","","","","","","","",""] };
-                newMatch.state.symbols = { [lobby.players[0]]: "X", [lobby.players[1]]: "O" };
-            } else if (gameType === 'typing') {
-                const texts = ["learning is the key to success", "practice makes perfect", "speed and accuracy matter"];
-                newMatch.state.data = { targetText: texts[Math.floor(Math.random()*texts.length)], finished: {} };
-            } else if (gameType === 'trivia') {
-                const q = TRIVIA_QUESTIONS[Math.floor(Math.random() * TRIVIA_QUESTIONS.length)];
-                newMatch.state.data = { question: q.q, options: q.opts, currentAnswer: q.ans };
-            }
-            db.matches.push(newMatch);
-            db.lobbies = db.lobbies.filter(l => l.id !== lobby.id);
-            await saveDb(db);
-            return res.json({ status: 'in_match', match: newMatch });
-        }
-    } else {
-        lobby = { id: 'lobby_' + Date.now(), gameType: gameType, teamSize: teamSize, players: [username], createdAt: Date.now() };
-        db.lobbies.push(lobby);
-    }
-    await saveDb(db);
-    res.json({ status: 'waiting', lobby });
-});
+async function cancelMatchmaking() {
+    clearInterval(pollingInterval);
+    await fetchDb();
+    dbData.lobbies = dbData.lobbies.filter(l => !l.players.includes(currentUser));
+    await saveDb();
+    closeModal('lobby-modal');
+}
 
-app.post('/api/match/action', async (req, res) => {
-    const { username, matchId, action, value } = req.body;
-    let db = await getDb();
-    let match = db.matches.find(m => m.id === matchId);
-    if (!match || match.state.winner) return res.status(400).json({ error: 'Match invalid or ended' });
+async function startMatch(match) {
+    currentMatchId = match.id;
+    localBotMatch = null;
+    closeModal('lobby-modal');
+    openModal('match-modal');
+    const gameInfo = GAMES.find(g => g.id === match.gameType) || { name: 'بازی', desc: '' };
+    document.getElementById('m-title').textContent = gameInfo.name;
+    document.getElementById('m-subtitle').textContent = gameInfo.desc;
+    
+    renderMatchUI(match);
+    pollingInterval = setInterval(async () => {
+        await fetchDb();
+        let m = dbData.matches.find(x => x.id === currentMatchId);
+        if(m) renderMatchUI(m);
+        else endMatch();
+    }, 1500);
+}
 
-    if (action === 'surrender') {
-        match.state.winner = match.players.find(p => p !== username);
-    } 
-    else if (match.gameType === 'math_battle') {
-        if(action === 'answer' && match.state.turn === username) {
-            if(value === match.state.data.currentAnswer) {
-                match.state.scores[username] += 10;
-                if (match.state.scores[username] >= 30) match.state.winner = username;
-                else {
-                    const a = Math.floor(Math.random() * 20) + 1, b = Math.floor(Math.random() * 20) + 1;
-                    match.state.data = { question: `${a} + ${b}`, currentAnswer: a+b };
-                    match.state.turn = match.players.find(p => p !== username);
-                }
-            } else { match.state.scores[username] -= 2; }
-        }
-    }
-    else if (match.gameType === 'tictactoe') {
-        if(action === 'place' && match.state.turn === username) {
-            const index = value;
-            if(match.state.data.board[index] === "") {
-                match.state.data.board[index] = match.state.symbols[username];
-                const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-                for(let pattern of winPatterns) {
-                    if(match.state.data.board[pattern[0]] !== "" && 
-                       match.state.data.board[pattern[0]] === match.state.data.board[pattern[1]] && 
-                       match.state.data.board[pattern[1]] === match.state.data.board[pattern[2]]) {
-                        match.state.winner = username; break;
-                    }
-                }
-                if(!match.state.winner && !match.state.data.board.includes("")) match.state.winner = "draw";
-                else if(!match.state.winner) match.state.turn = match.players.find(p => p !== username);
-            }
-        }
-    }
-    else if (match.gameType === 'typing') {
-        if(action === 'finish' && !match.state.data.finished[username]) {
-            if(value === match.state.data.targetText) {
-                match.state.data.finished[username] = true;
-                match.state.winner = username;
-            }
-        }
-    }
-    else if (match.gameType === 'trivia') {
-        if(action === 'answer_trivia' && match.state.turn === username) {
-            if(value === match.state.data.currentAnswer) {
-                match.state.scores[username] += 10;
-                if (match.state.scores[username] >= 30) match.state.winner = username;
-                else {
-                    const q = TRIVIA_QUESTIONS[Math.floor(Math.random() * TRIVIA_QUESTIONS.length)];
-                    match.state.data = { question: q.q, options: q.opts, currentAnswer: q.ans };
-                    match.state.turn = match.players.find(p => p !== username);
-                }
-            } else { match.state.scores[username] -= 2; }
-        }
-    }
-    else if (match.gameType === 'reaction') {
-        if(action === 'init' && !match.state.startTime && match.state.turn === username) {
-            match.state.startTime = Date.now() + Math.floor(Math.random() * 4000) + 2000;
-        }
-        if(action === 'click' && !match.state.winner) match.state.winner = username;
-    }
+// --- Bot Logic ---
+function startBotMatch(gameId) {
+    clearTimeout(botTimer);
+    localBotMatch = { id: 'bot_match', gameType: gameId, players: [currentUser, 'NeoBot'], state: { scores: { [currentUser]: 0, 'NeoBot': 0 }, turn: currentUser, data: {}, winner: null, startTime: null, finished: false } };
+    const baseGame = gameId.split(':')[0];
+    if(baseGame === 'math_battle') initMathBot();
+    else if(baseGame === 'tictactoe') { localBotMatch.state.data = { board: ["","","","","","","","",""] }; localBotMatch.state.symbols = { [currentUser]: "X", "NeoBot": "O" }; }
+    else if(baseGame === 'typing') { const texts = ["learning is the key", "practice makes perfect", "cognitive training"]; localBotMatch.state.data = { targetText: texts[Math.floor(Math.random()*texts.length)], finished: {} }; }
+    else if(baseGame === 'reaction') { localBotMatch.state.startTime = Date.now() + Math.floor(Math.random() * 4000) + 2000; botTimer = setTimeout(() => { if(localBotMatch && !localBotMatch.state.winner) { localBotMatch.state.winner = 'NeoBot'; renderMatchUI(localBotMatch); } }, localBotMatch.state.startTime - Date.now() + 800); }
+    
+    currentMatchId = 'bot_match';
+    openModal('match-modal');
+    const gameInfo = GAMES.find(g => g.id === gameId);
+    document.getElementById('m-title').textContent = gameInfo.name + " (بات)";
+    document.getElementById('m-subtitle').textContent = gameInfo.desc;
+    renderMatchUI(localBotMatch);
+}
 
-    await saveDb(db);
-    res.json({ success: true, match });
-});
+function initMathBot() { const a = Math.floor(Math.random() * 20) + 1, b = Math.floor(Math.random() * 20) + 1; localBotMatch.state.data = { question: `${a} + ${b}`, currentAnswer: a+b }; }
 
-app.post('/api/match/finish', async (req, res) => {
-    const { matchId } = req.body;
-    let db = await getDb();
-    let match = db.matches.find(m => m.id === matchId);
-    if(match && !match.finished) {
-        match.finished = true;
-        match.players.forEach(p => {
-            let user = db.users.find(u => u.username === p);
-            if(user) {
-                if(!user.history) user.history = [];
-                const isWin = match.state.winner === p;
-                const isDraw = match.state.winner === 'draw';
-                user.history.push({ game: match.gameType, result: isWin ? 'win' : (isDraw ? 'draw' : 'lose'), date: Date.now() });
-                if(isWin) {
-                    user.wins = (user.wins || 0) + 1;
-                    user.elo = (user.elo || 1000) + 15;
-                } else if (!isDraw) {
-                    user.losses = (user.losses || 0) + 1;
-                    user.elo = (user.elo || 1000) - 10;
-                }
-            }
-        });
-        db.matches = db.matches.filter(m => m.id !== matchId);
+function triggerBotMove() {
+    clearTimeout(botTimer);
+    const m = localBotMatch;
+    if(!m || m.state.winner) return;
+    botTimer = setTimeout(() => {
+        const baseGame = m.gameType.split(':')[0];
+        if(baseGame === 'math_battle') { let val = m.state.data.currentAnswer; if(Math.random() > 0.7) val += 2; applyLocalAction('NeoBot', 'answer', val); }
+        else if(baseGame === 'tictactoe') { let empty = m.state.data.board.map((c, i) => c === "" ? i : null).filter(i => i !== null); if(empty.length > 0) applyLocalAction('NeoBot', 'place', empty[Math.floor(Math.random() * empty.length)]); }
+        else if(baseGame === 'typing') applyLocalAction('NeoBot', 'finish', m.state.data.targetText);
+    }, 1500 + Math.random() * 1000);
+}
+
+function applyLocalAction(username, action, value) {
+    const m = localBotMatch;
+    if(!m || m.state.winner) return;
+    const baseGame = m.gameType.split(':')[0];
+    if(baseGame === 'math_battle') {
+        if(action === 'answer' && m.state.turn === username) {
+            if(value === m.state.data.currentAnswer) { m.state.scores[username] += 10; if(m.state.scores[username] >= 30) m.state.winner = username; else { initMathBot(); m.state.turn = m.players.find(p => p !== username); } } else m.state.scores[username] -= 2;
+        }
+    } else if(baseGame === 'tictactoe') {
+        if(action === 'place' && m.state.turn === username && m.state.data.board[value] === "") {
+            m.state.data.board[value] = m.state.symbols[username];
+            const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            for(let p of winPatterns) { if(m.state.data.board[p[0]] !== "" && m.state.data.board[p[0]] === m.state.data.board[p[1]] && m.state.data.board[p[1]] === m.state.data.board[p[2]]) { m.state.winner = username; break; } }
+            if(!m.state.winner && !m.state.data.board.includes("")) m.state.winner = "draw";
+            else if(!m.state.winner) m.state.turn = m.players.find(p => p !== username);
+        }
+    } else if(baseGame === 'typing') {
+        if(action === 'finish' && !m.state.data.finished[username] && value === m.state.data.targetText) { m.state.data.finished[username] = true; m.state.winner = username; }
+    } else if(baseGame === 'reaction') {
+        if(action === 'click' && !m.state.winner) m.state.winner = username;
     }
-    await saveDb(db);
-    res.json({ success: true });
-});
+    renderMatchUI(m);
+    if(!m.state.winner && m.state.turn === 'NeoBot') triggerBotMove();
+    if(m.state.winner && !m.state.finished) { m.state.finished = true; finishBotMatch(m); }
+}
 
-// Endpoint مخصوص ذخیره امتیاز بازی با بات
-app.post('/api/user/update', async (req, res) => {
-    const { username, game, result } = req.body;
-    let db = await getDb();
-    let user = db.users.find(u => u.username === username);
+async function finishBotMatch(m) {
+    const isWin = m.state.winner === currentUser;
+    await fetch('/api/match/finish', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ matchId: m.id }) }); // Just to trigger generic logic if needed, but we use custom here
+    // Manual update for bot
+    let user = dbData.users.find(u => u.username === currentUser);
     if(user) {
         if(!user.history) user.history = [];
-        user.history.push({ game, result, date: Date.now() });
-        if(result === 'win') {
-            user.wins = (user.wins || 0) + 1;
-            user.elo = (user.elo || 1000) + 10; // بات امتیاز کمتری میده
-        } else if (result === 'lose') {
-            user.losses = (user.losses || 0) + 1;
-            user.elo = (user.elo || 1000) - 5;
-        }
-        await saveDb(db);
-        res.json({ success: true });
-    } else {
-        res.status(404).json({ error: 'User not found' });
+        user.history.push({ game: m.gameType, result: isWin ? 'win' : 'lose', date: Date.now() });
+        if(isWin) { user.wins++; user.elo += 10; } else { user.losses++; user.elo -= 5; }
+        await saveDb();
+        updateNav();
     }
-});
+}
 
-app.listen(PORT, () => console.log(`NeoBattle Server is running on port ${PORT}`));
+async function renderMatchUI(match) {
+    const isBot = match.id === 'bot_match';
+    const userScore = match.state.scores[currentUser] || 0;
+    const enemyName = isBot ? 'NeoBot' : match.players.find(p => p !== currentUser);
+    const enemyScore = match.state.scores[enemyName] || 0;
+    document.getElementById('m-score').textContent = userScore;
+    document.getElementById('m-enemy-score').textContent = enemyScore;
+    const content = document.getElementById('m-content');
+    const baseGame = match.gameType.split(':')[0];
+    
+    if(match.state.winner) {
+        if(!isBot) clearInterval(pollingInterval);
+        else clearTimeout(botTimer);
+        const isWin = match.state.winner === currentUser;
+        const isDraw = match.state.winner === 'draw';
+        if(!isBot && !match.finished) {
+            await fetch('/api/match/finish', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ matchId: match.id }) });
+            await fetchDb(); updateNav();
+        }
+        content.innerHTML = `<div class="text-center py-8"><i data-lucide="${isDraw ? 'meh' : (isWin ? 'smile' : 'frown')}" class="w-20 h-20 mx-auto mb-4 ${isDraw ? 'text-slate-400' : (isWin ? 'text-emerald-400' : 'text-rose-400')}"></i><h3 class="text-2xl font-bold mb-2">${isDraw ? 'مساوی شد!' : (isWin ? 'شما برنده شدید!' : 'شما باختید!')}</h3><button onclick="endMatch()" class="btn-brand px-6 py-2 rounded-lg mt-4">بستن</button></div>`;
+        lucide.createIcons(); return;
+    }
+    
+    if(baseGame === 'math_battle') {
+        if(match.state.turn === currentUser) {
+            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">نوبت شماست!</p><div dir="ltr" class="text-5xl font-bold text-indigo-400 mb-6 bg-slate-800/50 px-8 py-4 rounded-xl">${match.state.data.question} = ?</div><input type="number" id="math-answer" placeholder="جواب" class="w-32 text-center text-2xl font-bold mb-4" onkeydown="if(event.key==='Enter')submitMath()"><button onclick="submitMath()" class="btn-brand px-6 py-2 rounded-lg font-bold">ارسال</button>`;
+            document.getElementById('math-answer').focus();
+        } else { content.innerHTML = `<p class="text-slate-400 text-lg">در انتظار حریف...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`; }
+    } else if(baseGame === 'tictactoe') {
+        const mySymbol = match.state.symbols[currentUser];
+        const isMyTurn = match.state.turn === currentUser;
+        content.innerHTML = `<p class="mb-4 text-sm ${isMyTurn ? 'text-emerald-400' : 'text-slate-400'}">شما (<b>${mySymbol}</b>) | ${isMyTurn ? 'نوبت شماست' : 'نوبت حریف'}</p><div class="grid grid-cols-3 gap-2 w-64">${match.state.data.board.map((cell, i) => `<div onclick="${isMyTurn ? `placeTTT(${i})` : ''}" class="ttt-cell h-20 bg-slate-800 rounded-lg flex items-center justify-center text-4xl font-bold ${cell === 'X' ? 'text-emerald-400' : 'text-rose-400'} cursor-pointer">${cell}</div>`).join('')}</div>`;
+    } else if(baseGame === 'typing') {
+        content.innerHTML = `<p class="mb-4 text-sm text-slate-400">متن زیر را سریع تایپ کنید:</p><div dir="ltr" class="bg-slate-800 p-4 rounded-lg mb-4 text-lg font-bold text-amber-400">${match.state.data.targetText}</div><input type="text" id="typing-input" placeholder="اینجا تایپ کنید..." class="w-full max-w-md mb-4 text-center"><button onclick="submitTyping()" class="btn-brand px-6 py-2 rounded-lg font-bold">اتمام تایپ</button>`;
+        document.getElementById('typing-input').focus();
+    } else if(baseGame === 'reaction') {
+        if(!isBot && !match.state.startTime && match.state.turn === currentUser) fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'init' }) });
+        if(!match.state.startTime) content.innerHTML = `<div class="w-32 h-32 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xl">آماده باش...</div>`;
+        else if(match.state.startTime - Date.now() > 0) content.innerHTML = `<div class="w-32 h-32 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xl">آماده باش...</div>`;
+        else content.innerHTML = `<p class="text-emerald-400 font-bold mb-4 text-xl">الان!</p><button onclick="reactionClick()" class="bg-emerald-600 px-10 py-5 rounded-xl font-bold text-lg pulse-ring">کلیک کن!</button>`;
+    }
+    lucide.createIcons();
+}
+
+async function submitMath() {
+    const val = parseInt(document.getElementById('math-answer').value);
+    if(isNaN(val)) return;
+    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'answer', val);
+    else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match) { match.state.turn = match.players.find(p => p !== currentUser); renderMatchUI(match); }
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer', value: val }) });
+    }
+}
+
+async function placeTTT(index) {
+    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'place', index);
+    else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match && match.state.turn === currentUser && match.state.data.board[index] === "") {
+            match.state.data.board[index] = match.state.symbols[currentUser];
+            match.state.turn = match.players.find(p => p !== currentUser);
+            renderMatchUI(match);
+            await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
+        }
+    }
+}
+
+async function submitTyping() {
+    const val = document.getElementById('typing-input').value;
+    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'finish', val);
+    else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match) { match.state.turn = match.players.find(p => p !== currentUser); renderMatchUI(match); }
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'finish', value: val }) });
+    }
+}
+
+async function reactionClick() {
+    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'click', null);
+    else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match) { match.state.winner = currentUser; renderMatchUI(match); }
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
+    }
+}
+
+async function endMatch() {
+    clearInterval(pollingInterval);
+    clearTimeout(botTimer);
+    currentMatchId = null; localBotMatch = null;
+    closeModal('match-modal'); navigate('home');
+}
+
+async function leaveMatch() {
+    if(currentMatchId === 'bot_match') { if(localBotMatch && !localBotMatch.state.winner) { localBotMatch.state.winner = 'NeoBot'; await finishBotMatch(localBotMatch); } }
+    else { await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'surrender' }) }); }
+    endMatch();
+}
+
+function renderProfile() {
+    const user = dbData.users.find(u => u.username === currentUser);
+    if(!user) return;
+    document.getElementById('p-avatar').textContent = currentUser.charAt(0).toUpperCase();
+    document.getElementById('p-username').textContent = currentUser;
+    document.getElementById('p-elo').textContent = user.elo || 1000;
+    document.getElementById('p-wins').textContent = user.wins || 0;
+    document.getElementById('p-losses').textContent = user.losses || 0;
+    const total = (user.wins||0) + (user.losses||0);
+    document.getElementById('p-winrate').textContent = total > 0 ? Math.round(((user.wins||0)/total)*100) + '%' : '0%';
+    const historyHtml = (user.history || []).slice().reverse().map(h => {
+        const gameName = GAMES.find(g => g.id === h.game)?.name || h.game.split(':')[0];
+        return `<div class="bg-slate-800/50 p-3 rounded-lg flex justify-between items-center"><span class="text-sm font-medium">${gameName}</span><span class="text-xs font-bold px-2 py-1 rounded ${h.result === 'win' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${h.result === 'win' ? 'برد' : 'باخت'}</span></div>`;
+    }).join('') || '<p class="text-slate-400 text-center py-4">سابقه بازی وجود ندارد</p>';
+    document.getElementById('p-history').innerHTML = historyHtml;
+    lucide.createIcons();
+}
+
+window.onload = async function() { lucide.createIcons(); try { await fetchDb(); } catch (e) {} };
+</script>
+</body>
+</html>
