@@ -11,7 +11,6 @@ const BIN_ID = process.env.JSONBIN_BIN_ID;
 const API_KEY = process.env.JSONBIN_API_KEY;
 const DB_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-// دیتابیس در حافظه موقت سرور نگهداری می‌شود تا تاخیر به صفر برسد
 let memoryDb = { users: [], lobbies: [], matches: [], clanMessages: [], dms: [], challenges: [] };
 let isSaving = false;
 
@@ -37,6 +36,7 @@ async function loadDb() {
             memoryDb.users.forEach(u => {
                 if(!u.friends) u.friends = [];
                 if(!u.friendRequests) u.friendRequests = [];
+                if(!u.theme) u.theme = 'default';
             });
             console.log("DB Loaded into Memory!");
         }
@@ -44,7 +44,7 @@ async function loadDb() {
 }
 
 async function saveDb() {
-    if(isSaving) return; // جلوگیری از تداخل درخواست‌های ذخیره سازی
+    if(isSaving) return;
     isSaving = true;
     try {
         await fetch(DB_URL, {
@@ -56,20 +56,16 @@ async function saveDb() {
     isSaving = false;
 }
 
-// هر 10 ثانیه دیتابیس حافظه موقت در اینترنت ذخیره میشود
 setInterval(saveDb, 10000);
 
-app.get('/api/db', async (req, res) => {
-    res.json(memoryDb); // بازگرداندن فوری اطلاعات بدون تاخیر
-});
+app.get('/api/db', async (req, res) => res.json(memoryDb));
 
 app.post('/api/db', async (req, res) => {
     memoryDb = req.body;
-    saveDb(); // ذخیره در پس زمینه
+    saveDb();
     res.json({ success: true });
 });
 
-// --- Social Endpoints ---
 app.post('/api/social/addfriend', async (req, res) => {
     const { username, target } = req.body;
     let targetUser = memoryDb.users.find(u => u.username === target);
@@ -167,10 +163,8 @@ app.post('/api/social/acceptchallenge', async (req, res) => {
     res.json({ success: true });
 });
 
-// --- Matchmaking (Public) ---
 app.post('/api/matchmaking', async (req, res) => {
     const { username, gameType, teamSize } = req.body;
-    
     let existingMatch = memoryDb.matches.find(m => m.players.includes(username));
     if (existingMatch) return res.json({ status: 'in_match', match: existingMatch });
     
@@ -178,7 +172,6 @@ app.post('/api/matchmaking', async (req, res) => {
     if (existingLobby) return res.json({ status: 'waiting', lobby: existingLobby });
 
     let lobby = memoryDb.lobbies.find(l => l.gameType === gameType && l.teamSize === teamSize && l.players.length < (teamSize * 2) && !l.isPrivate);
-    
     if (lobby) {
         lobby.players.push(username);
         if (lobby.players.length === lobby.teamSize * 2) {
@@ -280,7 +273,6 @@ app.post('/api/match/finish', async (req, res) => {
     res.json({ success: true });
 });
 
-// بارگذاری اطلاعات در حافظه موقت هنگام روشن شدن سرور
 loadDb().then(() => {
     app.listen(PORT, () => console.log(`NeoBattle Server running on ${PORT}`));
 });
