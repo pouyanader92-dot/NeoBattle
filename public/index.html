@@ -11,22 +11,33 @@
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['Vazirmatn', 'sans-serif'] } } } }
     </script>
     <style>
-        body { background: #0f172a; color: #e2e8f0; font-family: 'Vazirmatn', sans-serif; margin: 0; min-height: 100vh; }
-        .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(99, 102, 241, 0.3); }
-        .btn-brand { background: #6366f1; transition: 0.2s; color: #fff; border: none; cursor: pointer; }
-        .btn-brand:hover { background: #4f46e5; box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
+        /* متغیرهای تم سایت */
+        :root {
+            --bg-color: #0f172a; --text-color: #e2e8f0;
+            --glass-bg: rgba(30, 41, 59, 0.8); --glass-border: rgba(99, 102, 241, 0.3);
+            --brand-color: #6366f1; --brand-hover: #4f46e5;
+            --input-bg: #1e293b; --input-border: #334155;
+        }
+        body.theme-emerald { --brand-color: #10b981; --brand-hover: #059669; --glass-border: rgba(16, 185, 129, 0.4); }
+        body.theme-rose { --brand-color: #f43f5e; --brand-hover: #e11d48; --glass-border: rgba(244, 63, 94, 0.4); }
+        body.theme-amber { --brand-color: #f59e0b; --brand-hover: #d97706; --glass-border: rgba(245, 158, 11, 0.4); }
+        
+        body { background: var(--bg-color); color: var(--text-color); font-family: 'Vazirmatn', sans-serif; margin: 0; min-height: 100vh; }
+        .glass { background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); }
+        .btn-brand { background: var(--brand-color); transition: 0.2s; color: #fff; border: none; cursor: pointer; }
+        .btn-brand:hover { background: var(--brand-hover); box-shadow: 0 0 15px var(--brand-color); }
         .btn-danger { background: #ef4444; transition: 0.2s; color: #fff; border: none; cursor: pointer; }
         .btn-danger:hover { background: #dc2626; }
-        input, select { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 0.75rem; border-radius: 0.5rem; width: 100%; transition: 0.2s; font-size: 1rem; min-height: 48px; }
-        input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        input, select { background: var(--input-bg); border: 1px solid var(--input-border); color: #fff; padding: 0.75rem; border-radius: 0.5rem; width: 100%; transition: 0.2s; font-size: 1rem; min-height: 48px; }
+        input:focus { outline: none; border-color: var(--brand-color); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
         
-        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); } 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); } }
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 var(--brand-color); } 70% { box-shadow: 0 0 0 20px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
         .pulse-ring { animation: pulse-ring 1.5s infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 1s linear infinite; }
         
         .game-card { transition: 0.3s; }
-        .game-card:hover { transform: translateY(-5px); border-color: #6366f1 !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.2); }
+        .game-card:hover { transform: translateY(-5px); border-color: var(--brand-color) !important; box-shadow: 0 10px 20px -5px var(--glass-border); }
         .ttt-cell { transition: 0.2s; }
         .ttt-cell:hover { background: #334155; }
         
@@ -36,15 +47,17 @@
         
         .chat-box::-webkit-scrollbar { width: 4px; }
         .chat-box::-webkit-scrollbar-thumb { background: #334155; }
+        .theme-btn { border: 2px solid transparent; transition: 0.2s; }
+        .theme-btn.active { border-color: #fff; transform: scale(1.1); }
     </style>
 </head>
-<body>
+<body class="theme-default">
 
-<div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] hidden glass px-6 py-3 rounded-lg text-sm font-medium border-indigo-500"></div>
+<div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] hidden glass px-6 py-3 rounded-lg text-sm font-medium" style="border-color: var(--brand-color);"></div>
 
 <div id="auth-modal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-black/80">
     <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
-        <div class="w-16 h-16 mx-auto bg-indigo-600 rounded-2xl flex items-center justify-center text-3xl font-bold mb-4">N</div>
+        <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl font-bold mb-4" style="background: var(--brand-color);">N</div>
         <h2 class="text-2xl font-bold mb-2">ورود به نئو بَتِل</h2>
         <div class="space-y-4 text-right">
             <div><label class="text-xs text-slate-400 block mb-1">نام کاربری</label><input id="auth-username" type="text" placeholder="Username..."></div>
@@ -56,7 +69,7 @@
 
 <div id="lobby-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/90">
     <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
-        <div class="w-20 h-20 mx-auto rounded-full bg-indigo-600 flex items-center justify-center mb-6 pulse-ring">
+        <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6 pulse-ring" style="background: var(--brand-color);">
             <i data-lucide="loader" class="w-10 h-10 animate-spin"></i>
         </div>
         <h3 class="text-xl font-bold mb-2">در جستجوی حریف...</h3>
@@ -94,13 +107,13 @@
 <div id="app" class="max-w-6xl mx-auto p-4 pb-20">
     <nav class="flex justify-between items-center mb-8 glass p-4 rounded-2xl sticky top-4 z-30">
         <div class="flex items-center gap-3 cursor-pointer" onclick="navigate('home')">
-            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center font-bold text-lg">N</div>
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg" style="background: var(--brand-color);">N</div>
             <span class="font-bold text-xl hidden sm:block">NeoBattle</span>
         </div>
         <div class="flex items-center gap-4 sm:gap-6">
             <div class="flex items-center gap-2 text-amber-400 font-bold"><i data-lucide="trophy" class="w-5 h-5"></i><span id="nav-elo">0</span></div>
             <button onclick="navigate('home')" class="text-sm text-slate-300 hover:text-white">آرنا</button>
-            <button onclick="navigate('social')" class="text-sm text-slate-300 hover:text-white flex items-center gap-1">کلن <span id="notif-dot" class="hidden w-2 h-2 bg-red-500 rounded-full"></span></button>
+            <button onclick="navigate('social')" class="text-sm text-slate-300 hover:text-white">کلن</button>
             <button onclick="navigate('profile')" class="text-sm text-slate-300 hover:text-white">پنل کاربری</button>
             <button onclick="logout()" class="text-slate-400 hover:text-red-400 p-2"><i data-lucide="log-out" class="w-5 h-5"></i></button>
         </div>
@@ -129,9 +142,9 @@
     <div id="section-social" class="hidden">
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass p-6 rounded-2xl">
-                <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-indigo-400"></i> نئو کلن (گلوبال)</h3>
+                <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5" style="color: var(--brand-color);"></i> نئو کلن (گلوبال)</h3>
                 <button onclick="openChat('clan')" class="w-full btn-brand py-2 rounded-lg font-bold mb-4">ورود به چت کلن</button>
-                <div class="text-xs text-slate-400 mb-2">اعضای آنلاین (نمایش بر اساس آخرین فعالیت):</div>
+                <div class="text-xs text-slate-400 mb-2">اعضای آنلاین:</div>
                 <div id="clan-members" class="space-y-2 max-h-60 overflow-y-auto pr-2"></div>
             </div>
             <div class="glass p-6 rounded-2xl">
@@ -149,7 +162,7 @@
     <div id="section-profile" class="hidden">
         <div class="glass p-6 rounded-2xl mb-6">
             <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
-                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl font-bold" id="p-avatar">N</div>
+                <div class="w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold" style="background: var(--brand-color);">N</div>
                 <div class="flex-1 text-center sm:text-right">
                     <h2 id="p-username" class="text-2xl font-bold mb-1">کاربر</h2>
                     <span class="text-amber-400 font-bold"><span id="p-elo">1000</span> ELO</span>
@@ -160,9 +173,17 @@
                 <div class="bg-slate-800/50 p-4 rounded-xl"><div class="text-2xl font-bold text-rose-400" id="p-losses">0</div><div class="text-xs text-slate-400 mt-1">باخت</div></div>
                 <div class="bg-slate-800/50 p-4 rounded-xl"><div class="text-2xl font-bold text-amber-400" id="p-winrate">0%</div><div class="text-xs text-slate-400 mt-1">نرخ برد</div></div>
             </div>
+            
+            <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="palette" class="w-5 h-5" style="color: var(--brand-color);"></i> تنظیمات تم سایت</h3>
+            <div class="flex gap-3 mb-6">
+                <button onclick="setTheme('default', this)" class="theme-btn active w-10 h-10 rounded-md" style="background: #6366f1;"></button>
+                <button onclick="setTheme('emerald', this)" class="theme-btn w-10 h-10 rounded-md" style="background: #10b981;"></button>
+                <button onclick="setTheme('rose', this)" class="theme-btn w-10 h-10 rounded-md" style="background: #f43f5e;"></button>
+                <button onclick="setTheme('amber', this)" class="theme-btn w-10 h-10 rounded-md" style="background: #f59e0b;"></button>
+            </div>
         </div>
         <div class="glass p-6 rounded-2xl">
-            <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 text-indigo-400"></i> تاریخچه بازی‌ها</h3>
+            <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5" style="color: var(--brand-color);"></i> تاریخچه بازی‌ها</h3>
             <div id="p-history" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
         </div>
     </div>
@@ -177,8 +198,8 @@ let isBotMode = false;
 let botTimer = null;
 let localBotMatch = null;
 let currentChatTarget = null;
-let chatPolling = null;
 let socialPolling = null;
+let isSubmitting = false; // جلوگیری از کلیک چندباره روی دکمه ارسال
 
 const TRIVIA_QUESTIONS = [
     { q: "پایتخت ایران کجاست؟", opts: ["تهران", "شیراز", "اصفهان", "مشهد"], ans: 0 },
@@ -225,7 +246,7 @@ const GAMES = [
     { id: 'reaction:pattern', name: 'الگوی تصویری', icon: 'pattern', desc: 'شناخت الگوهای بصری' },
     { id: 'reaction:odd_one_out', name: 'پیدا کن متفاوت را', icon: 'eye', desc: 'بهبود تفکیک جزئیات' },
     { id: 'reaction:morse_code', name: 'کد مورس', icon: 'radio', desc: 'رمزگشایی و شنیداری' },
-    { id: 'reaction:stroop', name: 'تست استروپ', icon: 'paintbrush', desc: 'کنترل بازداشت شناختی' },
+    { id: 'reaction:stroop', name: 'تست استروپ', icon: 'paintbrush', desc: 'کنترل بازداخت شناختی' },
     { id: 'reaction:schulte', name: 'جدول شولته', icon: 'table', desc: 'گسترش میدان دید' },
     { id: 'reaction:simon', name: 'بازی سیمون', icon: 'music', desc: 'تقویت حافظه توالی‌دار' }
 ];
@@ -251,7 +272,7 @@ async function doAuth() {
     await fetchDb();
     let user = dbData.users.find(x => x.username === u);
     if(!user) {
-        user = { username: u, password: p, elo: 1000, wins: 0, losses: 0, history: [], friends: [], friendRequests: [] };
+        user = { username: u, password: p, elo: 1000, wins: 0, losses: 0, history: [], friends: [], friendRequests: [], theme: 'default' };
         dbData.users.push(user);
         await saveDb();
     } else if(user.password !== p) return showToast('رمز اشتباه است');
@@ -281,6 +302,8 @@ async function saveDb() {
 function logout() { currentUser = null; clearInterval(socialPolling); document.getElementById('app').style.display = 'none'; showAuthModal(); }
 
 function initApp() {
+    let user = dbData.users.find(u => u.username === currentUser);
+    setTheme(user?.theme || 'default');
     updateNav();
     navigate('home');
     lucide.createIcons();
@@ -302,10 +325,23 @@ function updateNav() {
     if(user) document.getElementById('nav-elo').textContent = user.elo || 1000;
 }
 
+function setTheme(themeName, btn) {
+    document.body.className = 'theme-' + themeName;
+    let user = dbData.users.find(u => u.username === currentUser);
+    if(user) {
+        user.theme = themeName;
+        saveDb();
+    }
+    if(btn) {
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+}
+
 function renderGames() {
     const html = GAMES.map(g => `
         <div class="game-card glass p-4 rounded-xl flex flex-col items-center text-center cursor-pointer relative" onclick="findMatch('${g.id}')">
-            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3"><i data-lucide="${g.icon}" class="w-6 h-6 text-indigo-400"></i></div>
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background: var(--glass-border);"><i data-lucide="${g.icon}" class="w-6 h-6" style="color: var(--brand-color);"></i></div>
             <div class="font-bold text-sm mb-1">${g.name}</div>
             <div class="text-[10px] text-slate-400">${g.desc}</div>
         </div>
@@ -320,7 +356,7 @@ function startSocialPolling() {
         checkChallenges();
         if(!document.getElementById('section-social').classList.contains('hidden')) renderSocial();
         if(document.getElementById('chat-modal').style.display === 'flex') loadChatMessages(currentChatTarget);
-    }, 1000); // هر 1 ثانیه چک میشود
+    }, 1000);
 }
 
 function renderSocial() {
@@ -336,7 +372,7 @@ function renderSocial() {
 
     const fHtml = (user.friends || []).map(f => `
         <div class="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg mb-2">
-            <span class="text-sm flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-indigo-400"></i> ${f}</span>
+            <span class="text-sm flex items-center gap-2"><i data-lucide="user" class="w-4 h-4" style="color: var(--brand-color);"></i> ${f}</span>
             <div class="flex gap-1">
                 <button onclick="openChat('${f}')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg">چت</button>
                 <button onclick="challengeFriend('${f}')" class="text-xs btn-brand px-3 py-1 rounded-lg">چالش</button>
@@ -379,8 +415,8 @@ async function loadChatMessages(target) {
         if(dm) msgs = dm.messages;
     }
     const html = msgs.map(m => `
-        <div class="bg-slate-800/70 p-2 rounded-lg ${m.from === currentUser ? 'border-r-2 border-emerald-500' : 'border-r-2 border-indigo-500'}">
-            <div class="text-xs font-bold ${m.from === currentUser ? 'text-emerald-400' : 'text-indigo-400'}">${m.from}</div>
+        <div class="bg-slate-800/70 p-2 rounded-lg ${m.from === currentUser ? 'border-r-2 border-emerald-500' : 'border-r-2'}" style="border-color: var(--brand-color);">
+            <div class="text-xs font-bold ${m.from === currentUser ? 'text-emerald-400' : ''}" style="color: ${m.from === currentUser ? '#10b981' : 'var(--brand-color)'};">${m.from}</div>
             <div class="text-sm text-slate-200">${m.text}</div>
             <div class="text-[10px] text-slate-500 text-left">${m.date}</div>
         </div>
@@ -432,16 +468,15 @@ async function findMatch(gameId) {
             await fetchDb();
             let match = dbData.matches.find(m => m.players.includes(currentUser));
             if(match) { clearInterval(pollingInterval); startMatch(match); }
-        }, 1000); // هر 1 ثانیه چک میکند
+        }, 1000);
     } else if(data.status === 'in_match') startMatch(data.match);
 }
 
-// لغو فوری بدون صبر کردن برای سرور
 async function cancelMatchmaking() {
     clearInterval(pollingInterval);
-    closeModal('lobby-modal'); // بلافاصله مودال را میبندد
+    closeModal('lobby-modal');
     showToast('جستجو لغو شد');
-    fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) }); // در پس زمینه لابی را پاک میکند
+    fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) });
     await fetchDb();
     dbData.lobbies = dbData.lobbies.filter(l => !l.players.includes(currentUser));
     await saveDb();
@@ -458,11 +493,12 @@ async function startMatch(match) {
     
     renderMatchUI(match);
     pollingInterval = setInterval(async () => {
+        if(isSubmitting) return; // اگر در حال ارسال جواب هستیم، پولینگ متوقف میشود تا باگ پیش نیاید
         await fetchDb();
         let m = dbData.matches.find(x => x.id === currentMatchId);
         if(m) renderMatchUI(m);
         else endMatch();
-    }, 1000); // هر 1 ثانیه چک میکند
+    }, 1000);
 }
 
 function startBotMatch(gameId) {
@@ -559,7 +595,7 @@ async function renderMatchUI(match) {
     
     if(baseGame === 'math_battle') {
         if(match.state.turn === currentUser) {
-            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">نوبت شماست!</p><div dir="ltr" class="text-5xl font-bold text-indigo-400 mb-6 bg-slate-800/50 px-8 py-4 rounded-xl">${match.state.data.question} = ?</div><input type="number" id="math-answer" placeholder="جواب" class="w-32 text-center text-2xl font-bold mb-4" onkeydown="if(event.key==='Enter')submitMath()"><button onclick="submitMath()" class="btn-brand px-6 py-2 rounded-lg font-bold">ارسال</button>`;
+            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">نوبت شماست!</p><div dir="ltr" class="text-5xl font-bold mb-6 bg-slate-800/50 px-8 py-4 rounded-xl" style="color: var(--brand-color);">${match.state.data.question} = ?</div><input type="number" id="math-answer" placeholder="جواب" class="w-32 text-center text-2xl font-bold mb-4" onkeydown="if(event.key==='Enter')submitMath()"><button onclick="submitMath()" class="btn-brand px-6 py-2 rounded-lg font-bold">ارسال</button>`;
             document.getElementById('math-answer').focus();
         } else { content.innerHTML = `<p class="text-slate-400 text-lg">در انتظار حریف...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`; }
     } else if(baseGame === 'tictactoe') {
@@ -576,68 +612,101 @@ async function renderMatchUI(match) {
         else content.innerHTML = `<p class="text-emerald-400 font-bold mb-4 text-xl">الان!</p><button onclick="reactionClick()" class="bg-emerald-600 px-10 py-5 rounded-xl font-bold text-lg pulse-ring">کلیک کن!</button>`;
     } else if(baseGame === 'trivia') {
         if(match.state.turn === currentUser) {
-            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">سوال عمومی:</p><div class="text-xl font-bold text-indigo-400 mb-6 bg-slate-800/50 px-8 py-4 rounded-xl">${match.state.data.question}</div><div class="grid grid-cols-2 gap-3 w-full max-w-md">${match.state.data.options.map((opt, i) => `<button onclick="submitTrivia(${i})" class="bg-slate-800 hover:bg-indigo-600 transition px-4 py-3 rounded-lg font-medium border border-slate-700">${opt}</button>`).join('')}</div>`;
+            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">سوال عمومی:</p><div class="text-xl font-bold mb-6 bg-slate-800/50 px-8 py-4 rounded-xl" style="color: var(--brand-color);">${match.state.data.question}</div><div class="grid grid-cols-2 gap-3 w-full max-w-md">${match.state.data.options.map((opt, i) => `<button onclick="submitTrivia(${i})" class="bg-slate-800 hover:bg-indigo-600 transition px-4 py-3 rounded-lg font-medium border border-slate-700">${opt}</button>`).join('')}</div>`;
         } else { content.innerHTML = `<p class="text-slate-400 text-lg">در انتظار پاسخ حریف...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`; }
     }
     lucide.createIcons();
 }
 
 async function submitMath() {
-    const val = parseInt(document.getElementById('math-answer').value);
+    if(isSubmitting) return;
+    const input = document.getElementById('math-answer');
+    const val = parseInt(input.value);
     if(isNaN(val)) return;
-    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'answer', val);
-    else {
-        const match = dbData.matches.find(m => m.id === currentMatchId);
-        if(match) { match.state.turn = match.players.find(p => p !== currentUser); renderMatchUI(match); }
-        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer', value: val }) });
+    isSubmitting = true;
+    input.disabled = true;
+    
+    if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'answer', val); isSubmitting = false; return; }
+    
+    const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer', value: val }) });
+    const data = await res.json();
+    if(data.match) {
+        let index = dbData.matches.findIndex(m => m.id === data.match.id);
+        if(index !== -1) dbData.matches[index] = data.match;
+        renderMatchUI(data.match);
     }
+    isSubmitting = false;
 }
 
 async function placeTTT(index) {
-    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'place', index);
-    else {
-        const match = dbData.matches.find(m => m.id === currentMatchId);
-        if(match && match.state.turn === currentUser && match.state.data.board[index] === "") {
-            match.state.data.board[index] = match.state.symbols[currentUser];
-            match.state.turn = match.players.find(p => p !== currentUser);
-            renderMatchUI(match);
-            await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
-        }
+    if(isSubmitting) return;
+    isSubmitting = true;
+    
+    if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'place', index); isSubmitting = false; return; }
+    
+    const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
+    const data = await res.json();
+    if(data.match) {
+        let i = dbData.matches.findIndex(m => m.id === data.match.id);
+        if(i !== -1) dbData.matches[i] = data.match;
+        renderMatchUI(data.match);
     }
+    isSubmitting = false;
 }
 
 async function submitTyping() {
+    if(isSubmitting) return;
     const val = document.getElementById('typing-input').value;
-    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'finish', val);
-    else {
-        const match = dbData.matches.find(m => m.id === currentMatchId);
-        if(match) { match.state.turn = match.players.find(p => p !== currentUser); renderMatchUI(match); }
-        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'finish', value: val }) });
+    isSubmitting = true;
+    
+    if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'finish', val); isSubmitting = false; return; }
+    
+    const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'finish', value: val }) });
+    const data = await res.json();
+    if(data.match) {
+        let i = dbData.matches.findIndex(m => m.id === data.match.id);
+        if(i !== -1) dbData.matches[i] = data.match;
+        renderMatchUI(data.match);
     }
+    isSubmitting = false;
 }
 
 async function reactionClick() {
-    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'click', null);
-    else {
-        const match = dbData.matches.find(m => m.id === currentMatchId);
-        if(match) { match.state.winner = currentUser; renderMatchUI(match); }
-        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
+    if(isSubmitting) return;
+    isSubmitting = true;
+    
+    if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'click', null); isSubmitting = false; return; }
+    
+    const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
+    const data = await res.json();
+    if(data.match) {
+        let i = dbData.matches.findIndex(m => m.id === data.match.id);
+        if(i !== -1) dbData.matches[i] = data.match;
+        renderMatchUI(data.match);
     }
+    isSubmitting = false;
 }
 
 async function submitTrivia(optionIndex) {
-    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'answer_trivia', optionIndex);
-    else {
-        const match = dbData.matches.find(m => m.id === currentMatchId);
-        if(match) { match.state.turn = match.players.find(p => p !== currentUser); renderMatchUI(match); }
-        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer_trivia', value: optionIndex }) });
+    if(isSubmitting) return;
+    isSubmitting = true;
+    
+    if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'answer_trivia', optionIndex); isSubmitting = false; return; }
+    
+    const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer_trivia', value: optionIndex }) });
+    const data = await res.json();
+    if(data.match) {
+        let i = dbData.matches.findIndex(m => m.id === data.match.id);
+        if(i !== -1) dbData.matches[i] = data.match;
+        renderMatchUI(data.match);
     }
+    isSubmitting = false;
 }
 
 async function endMatch() {
     clearInterval(pollingInterval);
     clearTimeout(botTimer);
-    currentMatchId = null; localBotMatch = null;
+    currentMatchId = null; localBotMatch = null; isSubmitting = false;
     closeModal('match-modal'); navigate('home');
 }
 
@@ -650,7 +719,6 @@ async function leaveMatch() {
 function renderProfile() {
     const user = dbData.users.find(u => u.username === currentUser);
     if(!user) return;
-    document.getElementById('p-avatar').textContent = currentUser.charAt(0).toUpperCase();
     document.getElementById('p-username').textContent = currentUser;
     document.getElementById('p-elo').textContent = user.elo || 1000;
     document.getElementById('p-wins').textContent = user.wins || 0;
@@ -662,6 +730,11 @@ function renderProfile() {
         return `<div class="bg-slate-800/50 p-3 rounded-lg flex justify-between items-center"><span class="text-sm font-medium">${gameName}</span><span class="text-xs font-bold px-2 py-1 rounded ${h.result === 'win' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${h.result === 'win' ? 'برد' : 'باخت'}</span></div>`;
     }).join('') || '<p class="text-slate-400 text-center py-4">سابقه بازی وجود ندارد</p>';
     document.getElementById('p-history').innerHTML = historyHtml;
+    
+    // آپدیت دکمه تم فعال
+    document.querySelectorAll('.theme-btn').forEach(b => {
+        b.classList.toggle('active', b.style.background.includes(user.theme === 'default' ? '99, 102, 241' : ''))
+    });
     lucide.createIcons();
 }
 
