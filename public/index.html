@@ -180,25 +180,26 @@ let currentChatTarget = null;
 let chatPolling = null;
 let socialPolling = null;
 
-// 40 Games all playable & mapped to 5 cognitive engines
+const TRIVIA_QUESTIONS = [
+    { q: "پایتخت ایران کجاست؟", opts: ["تهران", "شیراز", "اصفهان", "مشهد"], ans: 0 },
+    { q: "۵ ضرب در ۶ چنده؟", opts: ["۳۵", "۴۰", "۳۰", "۲۵"], ans: 2 },
+    { q: "آب مخفف کدام سیاره است؟", opts: ["مرکری", "زحل", "ناهید", "مشتری"], ans: 3 },
+    { q: "نویسنده کتاب شاهنامه کیست؟", opts: ["سعدی", "حافظ", "فردوسی", "نظامی"], ans: 2 }
+];
+
 const GAMES = [
-    // Engine: math_battle (Processing Speed & Calculation)
     { id: 'math_battle', name: 'نبرد ریاضی', icon: 'calculator', desc: 'افزایش سرعت پردازش ذهنی' },
     { id: 'math_battle:sudoku', name: 'سودوکو', icon: 'layout-grid', desc: 'تقویت منطق و استدلال' },
     { id: 'math_battle:2048', name: '۲۰۴۸', icon: 'grid', desc: 'بهبود برنامه‌ریزی راهبردی' },
     { id: 'math_battle:math_seq', name: 'دنباله اعداد', icon: 'list-ordered', desc: 'تقویت الگوهای عددی' },
     { id: 'math_battle:binary', name: 'باینری', icon: 'binary', desc: 'آشنایی با منطق دیجیتال' },
     { id: 'math_battle:minesweeper', name: 'مین‌یاب', icon: 'bomb', desc: 'تحلیل ریسک و احتمال' },
-    
-    // Engine: tictactoe (Strategic Thinking & Foresight)
     { id: 'tictactoe:tictactoe', name: 'دوز بازی', icon: 'grid-3x3', desc: 'توسعه تفکر استراتژیک' },
     { id: 'tictactoe:chess', name: 'شطرنج سریع', icon: 'crown', desc: 'تقویت بینش و دوراندیشی' },
     { id: 'tictactoe:connect4', name: 'چهار در صف', icon: 'circle', desc: 'تسلط بر الگوهای فضایی' },
     { id: 'tictactoe:checkers', name: 'دامه', icon: 'square', desc: 'تقویت تفکر تاکتیکی' },
     { id: 'tictactoe:chess_puzzle', name: 'معمای شطرنج', icon: 'king', desc: 'بهبود حل مسئله' },
     { id: 'tictactoe:sokoban', name: 'انباری', icon: 'box', desc: 'تقویت درک فضایی' },
-    
-    // Engine: typing (Linguistic & Vocabulary)
     { id: 'typing:typing', name: 'تایپ سریع', icon: 'keyboard', desc: 'افزایش سرعت و دقت تایپ' },
     { id: 'typing:wordle', name: 'وردل', icon: 'type', desc: 'تقویت دایره لغات' },
     { id: 'typing:hangman', name: 'دار کشی', icon: 'gamepad-2', desc: 'بازیابی واژگان از حافظه' },
@@ -206,8 +207,6 @@ const GAMES = [
     { id: 'typing:anagram', name: 'جایگذاری حروف', icon: 'shuffle', desc: 'انعطاف‌پذیری زبانی' },
     { id: 'typing:word_scramble', name: 'کلمات درهم', icon: 'git-pull-request', desc: 'تحلیل ساختار کلمات' },
     { id: 'typing:crossword', name: 'جدول کلمات', icon: 'book-open', desc: 'غنی‌سازی دایره لغات' },
-    
-    // Engine: reaction (Reflexes & Focus)
     { id: 'reaction:reaction', name: 'زمان واکنش', icon: 'zap', desc: 'بهبود سرعت عصب و عضله' },
     { id: 'reaction:aim_trainer', name: 'هدف‌گیری', icon: 'target', desc: 'افزایش دقت چشمی' },
     { id: 'reaction:pong', name: 'پینگ پنگ', icon: 'circle-dot', desc: 'هماهنگی دست و چشم' },
@@ -216,15 +215,11 @@ const GAMES = [
     { id: 'reaction:tetris', name: 'تتریس', icon: 'blocks', desc: 'سرعت تصمیم‌گیری فضایی' },
     { id: 'reaction:maze', name: 'هزارتو', icon: 'route', desc: 'تقویت جهت‌یابی ذهنی' },
     { id: 'reaction:sliding_puzzle', name: 'پازل متحرک', icon: 'move', desc: 'حل مسئله گام‌به‌گام' },
-    
-    // Engine: trivia (Memory & Knowledge Retrieval)
     { id: 'trivia:trivia', name: 'دانستنی‌ها', icon: 'help-circle', desc: 'فراخوانی اطلاعات از حافظه بلندمدت' },
     { id: 'trivia:geography', name: 'جغرافیا', icon: 'globe', desc: 'تقویت حافظه مکانی' },
     { id: 'trivia:flag_quiz', name: 'پرچم‌ها', icon: 'flag', desc: 'یادآوری تصویر' },
     { id: 'trivia:logic_puzzle', name: 'معمای منطق', icon: 'puzzle', desc: 'استنتاج و استدلال منطقی' },
     { id: 'trivia:riddles', name: 'چیستان', icon: 'meh', desc: 'تفکر جانبی و خلاقانه' },
-    
-    // Engine: memory (Working Memory & Attention)
     { id: 'reaction:memory', name: 'حافظه تصویری', icon: 'image', desc: 'تقویت حافظه کوتاه‌مدت' },
     { id: 'reaction:color_match', name: 'تطبیق رنگ', icon: 'palette', desc: 'افزایش تمرکز انتخابی' },
     { id: 'reaction:pattern', name: 'الگوی تصویری', icon: 'pattern', desc: 'شناخت الگوهای بصری' },
@@ -253,7 +248,6 @@ async function doAuth() {
     const u = document.getElementById('auth-username').value.trim();
     const p = document.getElementById('auth-password').value;
     if(!u || !p) return showToast('نام و رمز را وارد کنید');
-    
     await fetchDb();
     let user = dbData.users.find(x => x.username === u);
     if(!user) {
@@ -261,7 +255,6 @@ async function doAuth() {
         dbData.users.push(user);
         await saveDb();
     } else if(user.password !== p) return showToast('رمز اشتباه است');
-    
     currentUser = u;
     hideAuthModal();
     document.getElementById('app').style.display = 'block';
@@ -285,12 +278,7 @@ async function saveDb() {
     catch (e) { console.error('Save DB Error:', e); }
 }
 
-function logout() { 
-    currentUser = null; 
-    clearInterval(socialPolling);
-    document.getElementById('app').style.display = 'none'; 
-    showAuthModal(); 
-}
+function logout() { currentUser = null; clearInterval(socialPolling); document.getElementById('app').style.display = 'none'; showAuthModal(); }
 
 function initApp() {
     updateNav();
@@ -317,9 +305,7 @@ function updateNav() {
 function renderGames() {
     const html = GAMES.map(g => `
         <div class="game-card glass p-4 rounded-xl flex flex-col items-center text-center cursor-pointer relative" onclick="findMatch('${g.id}')">
-            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3">
-                <i data-lucide="${g.icon}" class="w-6 h-6 text-indigo-400"></i>
-            </div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-3"><i data-lucide="${g.icon}" class="w-6 h-6 text-indigo-400"></i></div>
             <div class="font-bold text-sm mb-1">${g.name}</div>
             <div class="text-[10px] text-slate-400">${g.desc}</div>
         </div>
@@ -328,20 +314,18 @@ function renderGames() {
     lucide.createIcons();
 }
 
-// --- Social Logic ---
 function startSocialPolling() {
     socialPolling = setInterval(async () => {
         await fetchDb();
         checkChallenges();
-        if(document.getElementById('section-social').classList.contains('block')) renderSocial();
+        if(!document.getElementById('section-social').classList.contains('hidden')) renderSocial();
         if(document.getElementById('chat-modal').style.display === 'flex') loadChatMessages(currentChatTarget);
-    }, 2000);
+    }, 1000); // هر 1 ثانیه چک میشود
 }
 
 function renderSocial() {
     const user = dbData.users.find(u => u.username === currentUser);
     if(!user) return;
-
     const reqHtml = (user.friendRequests || []).map(req => `
         <div class="flex justify-between items-center bg-amber-500/10 p-2 rounded-lg mb-2">
             <span class="text-sm">${req}</span>
@@ -360,9 +344,7 @@ function renderSocial() {
         </div>
     `).join('');
     document.getElementById('friends-list').innerHTML = fHtml || '<p class="text-slate-400 text-center py-4 text-sm">لیست دوستان خالی است</p>';
-
-    const members = dbData.users.slice(0, 10).map(u => `<div class="text-sm text-slate-300 py-1 border-b border-slate-700">${u.username}</div>`).join('');
-    document.getElementById('clan-members').innerHTML = members;
+    document.getElementById('clan-members').innerHTML = dbData.users.slice(0, 10).map(u => `<div class="text-sm text-slate-300 py-1 border-b border-slate-700">${u.username}</div>`).join('');
 }
 
 async function sendFriendRequest() {
@@ -386,10 +368,7 @@ function openChat(target) {
     loadChatMessages(target);
 }
 
-function closeChat() {
-    currentChatTarget = null;
-    closeModal('chat-modal');
-}
+function closeChat() { currentChatTarget = null; closeModal('chat-modal'); }
 
 async function loadChatMessages(target) {
     let msgs = [];
@@ -439,10 +418,8 @@ async function challengeFriend(friend) {
     showToast(`چالش برای ${friend} ارسال شد!`);
 }
 
-// --- Matchmaking ---
 async function findMatch(gameId) {
     if(isBotMode) return startBotMatch(gameId);
-
     const teamSize = document.getElementById('team-size').value;
     openModal('lobby-modal');
     document.getElementById('lobby-info').textContent = `بازی: ${GAMES.find(g=>g.id===gameId).name} | حالت: ${teamSize}vs${teamSize}`;
@@ -455,16 +432,19 @@ async function findMatch(gameId) {
             await fetchDb();
             let match = dbData.matches.find(m => m.players.includes(currentUser));
             if(match) { clearInterval(pollingInterval); startMatch(match); }
-        }, 2000);
+        }, 1000); // هر 1 ثانیه چک میکند
     } else if(data.status === 'in_match') startMatch(data.match);
 }
 
+// لغو فوری بدون صبر کردن برای سرور
 async function cancelMatchmaking() {
     clearInterval(pollingInterval);
+    closeModal('lobby-modal'); // بلافاصله مودال را میبندد
+    showToast('جستجو لغو شد');
+    fetch('/api/db', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dbData) }); // در پس زمینه لابی را پاک میکند
     await fetchDb();
     dbData.lobbies = dbData.lobbies.filter(l => !l.players.includes(currentUser));
     await saveDb();
-    closeModal('lobby-modal');
 }
 
 async function startMatch(match) {
@@ -482,10 +462,9 @@ async function startMatch(match) {
         let m = dbData.matches.find(x => x.id === currentMatchId);
         if(m) renderMatchUI(m);
         else endMatch();
-    }, 1500);
+    }, 1000); // هر 1 ثانیه چک میکند
 }
 
-// --- Bot Logic ---
 function startBotMatch(gameId) {
     clearTimeout(botTimer);
     localBotMatch = { id: 'bot_match', gameType: gameId, players: [currentUser, 'NeoBot'], state: { scores: { [currentUser]: 0, 'NeoBot': 0 }, turn: currentUser, data: {}, winner: null, startTime: null, finished: false } };
@@ -545,8 +524,6 @@ function applyLocalAction(username, action, value) {
 
 async function finishBotMatch(m) {
     const isWin = m.state.winner === currentUser;
-    await fetch('/api/match/finish', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ matchId: m.id }) }); // Just to trigger generic logic if needed, but we use custom here
-    // Manual update for bot
     let user = dbData.users.find(u => u.username === currentUser);
     if(user) {
         if(!user.history) user.history = [];
@@ -597,6 +574,10 @@ async function renderMatchUI(match) {
         if(!match.state.startTime) content.innerHTML = `<div class="w-32 h-32 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xl">آماده باش...</div>`;
         else if(match.state.startTime - Date.now() > 0) content.innerHTML = `<div class="w-32 h-32 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xl">آماده باش...</div>`;
         else content.innerHTML = `<p class="text-emerald-400 font-bold mb-4 text-xl">الان!</p><button onclick="reactionClick()" class="bg-emerald-600 px-10 py-5 rounded-xl font-bold text-lg pulse-ring">کلیک کن!</button>`;
+    } else if(baseGame === 'trivia') {
+        if(match.state.turn === currentUser) {
+            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">سوال عمومی:</p><div class="text-xl font-bold text-indigo-400 mb-6 bg-slate-800/50 px-8 py-4 rounded-xl">${match.state.data.question}</div><div class="grid grid-cols-2 gap-3 w-full max-w-md">${match.state.data.options.map((opt, i) => `<button onclick="submitTrivia(${i})" class="bg-slate-800 hover:bg-indigo-600 transition px-4 py-3 rounded-lg font-medium border border-slate-700">${opt}</button>`).join('')}</div>`;
+        } else { content.innerHTML = `<p class="text-slate-400 text-lg">در انتظار پاسخ حریف...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`; }
     }
     lucide.createIcons();
 }
@@ -641,6 +622,15 @@ async function reactionClick() {
         const match = dbData.matches.find(m => m.id === currentMatchId);
         if(match) { match.state.winner = currentUser; renderMatchUI(match); }
         await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
+    }
+}
+
+async function submitTrivia(optionIndex) {
+    if(currentMatchId === 'bot_match') applyLocalAction(currentUser, 'answer_trivia', optionIndex);
+    else {
+        const match = dbData.matches.find(m => m.id === currentMatchId);
+        if(match) { match.state.turn = match.players.find(p => p !== currentUser); renderMatchUI(match); }
+        await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer_trivia', value: optionIndex }) });
     }
 }
 
