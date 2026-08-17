@@ -38,7 +38,6 @@ async function loadDb() {
                 if(!u.friendRequests) u.friendRequests = [];
                 if(!u.theme) u.theme = 'default';
             });
-            console.log("DB Loaded into Memory!");
         }
     } catch (e) { console.error("Load DB Error:", e.message); }
 }
@@ -59,12 +58,7 @@ async function saveDb() {
 setInterval(saveDb, 10000);
 
 app.get('/api/db', async (req, res) => res.json(memoryDb));
-
-app.post('/api/db', async (req, res) => {
-    memoryDb = req.body;
-    saveDb();
-    res.json({ success: true });
-});
+app.post('/api/db', async (req, res) => { memoryDb = req.body; saveDb(); res.json({ success: true }); });
 
 app.post('/api/social/addfriend', async (req, res) => {
     const { username, target } = req.body;
@@ -146,7 +140,6 @@ app.post('/api/social/acceptchallenge', async (req, res) => {
     const { username, challengeId } = req.body;
     let challenge = memoryDb.challenges.find(c => c.id === challengeId && c.to === username);
     if(!challenge) return res.status(404).json({ error: 'Challenge not found' });
-    
     let lobby = memoryDb.lobbies.find(l => l.id === challenge.id);
     if(lobby) {
         lobby.players.push(username);
@@ -167,7 +160,6 @@ app.post('/api/matchmaking', async (req, res) => {
     const { username, gameType, teamSize } = req.body;
     let existingMatch = memoryDb.matches.find(m => m.players.includes(username));
     if (existingMatch) return res.json({ status: 'in_match', match: existingMatch });
-    
     let existingLobby = memoryDb.lobbies.find(l => l.players.includes(username) && !l.isPrivate);
     if (existingLobby) return res.json({ status: 'waiting', lobby: existingLobby });
 
@@ -193,7 +185,6 @@ app.post('/api/match/action', async (req, res) => {
     const { username, matchId, action, value } = req.body;
     let match = memoryDb.matches.find(m => m.id === matchId);
     if (!match || match.state.winner) return res.status(400).json({ error: 'Match invalid' });
-
     const baseGame = match.gameType.split(':')[0];
 
     if (action === 'surrender') match.state.winner = match.players.find(p => p !== username);
