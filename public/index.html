@@ -11,7 +11,6 @@
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['Vazirmatn', 'sans-serif'] } } } }
     </script>
     <style>
-        /* متغیرهای تم سایت */
         :root {
             --bg-color: #0f172a; --text-color: #e2e8f0;
             --glass-bg: rgba(30, 41, 59, 0.8); --glass-border: rgba(99, 102, 241, 0.3);
@@ -30,6 +29,7 @@
         .btn-danger:hover { background: #dc2626; }
         input, select { background: var(--input-bg); border: 1px solid var(--input-border); color: #fff; padding: 0.75rem; border-radius: 0.5rem; width: 100%; transition: 0.2s; font-size: 1rem; min-height: 48px; }
         input:focus { outline: none; border-color: var(--brand-color); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        input:disabled { opacity: 0.5; cursor: not-allowed; }
         
         @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 var(--brand-color); } 70% { box-shadow: 0 0 0 20px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
         .pulse-ring { animation: pulse-ring 1.5s infinite; }
@@ -49,12 +49,19 @@
         .chat-box::-webkit-scrollbar-thumb { background: #334155; }
         .theme-btn { border: 2px solid transparent; transition: 0.2s; }
         .theme-btn.active { border-color: #fff; transform: scale(1.1); }
+
+        /* استایل‌های مخصوص بازی‌ها */
+        .math-question { font-family: monospace; letter-spacing: 2px; }
+        .typing-target { font-family: monospace; letter-spacing: 1px; }
+        .typing-correct { color: #10b981; }
+        .typing-incorrect { color: #ef4444; text-decoration: underline; }
     </style>
 </head>
 <body class="theme-default">
 
 <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] hidden glass px-6 py-3 rounded-lg text-sm font-medium" style="border-color: var(--brand-color);"></div>
 
+<!-- Auth Modal -->
 <div id="auth-modal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-black/80">
     <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
         <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl font-bold mb-4" style="background: var(--brand-color);">N</div>
@@ -67,6 +74,7 @@
     </div>
 </div>
 
+<!-- Lobby/Matchmaking Modal -->
 <div id="lobby-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/90">
     <div class="glass p-8 w-full max-w-md rounded-2xl text-center">
         <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6 pulse-ring" style="background: var(--brand-color);">
@@ -78,6 +86,7 @@
     </div>
 </div>
 
+<!-- Live Match Arena Modal -->
 <div id="match-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/95">
     <div class="glass p-6 w-full max-w-3xl rounded-2xl">
         <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
@@ -90,6 +99,7 @@
     </div>
 </div>
 
+<!-- Chat Modal -->
 <div id="chat-modal" class="fixed inset-0 z-40 items-center justify-center p-4 bg-black/90">
     <div class="glass p-6 w-full max-w-md rounded-2xl flex flex-col h-[80vh]">
         <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
@@ -104,6 +114,7 @@
     </div>
 </div>
 
+<!-- App Layout -->
 <div id="app" class="max-w-6xl mx-auto p-4 pb-20">
     <nav class="flex justify-between items-center mb-8 glass p-4 rounded-2xl sticky top-4 z-30">
         <div class="flex items-center gap-3 cursor-pointer" onclick="navigate('home')">
@@ -119,26 +130,39 @@
         </div>
     </nav>
 
+    <!-- Home / Arena Section -->
     <div id="section-home">
         <div class="text-center mb-10">
             <h1 class="text-3xl sm:text-4xl font-bold mb-2">آرنا مسابقات</h1>
             <p class="text-slate-400">مهارت‌های شناختی خود را محک بزن و ELO خود را بالا ببر!</p>
         </div>
+        
         <div class="mb-8 flex flex-col sm:flex-row gap-4 items-center justify-center glass p-4 rounded-xl">
             <label class="text-sm text-slate-400">حالت بازی:</label>
-            <select id="team-size" class="w-full sm:w-40">
+            <button id="bot-toggle" onclick="toggleBotMode()" class="btn-brand px-4 py-3 rounded-lg font-bold flex items-center gap-2 text-sm">
+                <i data-lucide="bot" class="w-5 h-5"></i> بازی با بات
+            </button>
+            
+            <!-- Team Size Selector (Human Mode) -->
+            <select id="team-size" class="w-full sm:w-40 human-mode-ui">
                 <option value="1">۱ نفره (1v1)</option>
                 <option value="2">۲ نفره (2v2)</option>
                 <option value="3">۳ نفره (3v3)</option>
                 <option value="4">۴ نفره (4v4)</option>
             </select>
-            <button id="bot-toggle" onclick="toggleBotMode()" class="btn-brand px-4 py-3 rounded-lg font-bold flex items-center gap-2 text-sm">
-                <i data-lucide="bot" class="w-5 h-5"></i> بازی با بات
-            </button>
+            
+            <!-- Bot Difficulty Selector (Bot Mode) -->
+            <select id="bot-difficulty" class="w-full sm:w-40 hidden bot-mode-ui">
+                <option value="easy">آسان</option>
+                <option value="medium" selected>متوسط</option>
+                <option value="hard">سخت</option>
+            </select>
         </div>
+        
         <div id="games-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
     </div>
 
+    <!-- Social Section -->
     <div id="section-social" class="hidden">
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass p-6 rounded-2xl">
@@ -159,6 +183,7 @@
         </div>
     </div>
 
+    <!-- Profile Section -->
     <div id="section-profile" class="hidden">
         <div class="glass p-6 rounded-2xl mb-6">
             <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
@@ -190,6 +215,11 @@
 </div>
 
 <script>
+// ==========================================
+// NEOBATTLE CLIENT SCRIPT v3.0
+// Optimistic UI, Bot Difficulty, Themed Games
+// ==========================================
+
 let currentUser = null;
 let dbData = { users: [], lobbies: [], matches: [], clanMessages: [], dms: [], challenges: [] };
 let pollingInterval = null;
@@ -199,7 +229,7 @@ let botTimer = null;
 let localBotMatch = null;
 let currentChatTarget = null;
 let socialPolling = null;
-let isSubmitting = false; // جلوگیری از کلیک چندباره روی دکمه ارسال
+let isSubmitting = false; // Prevents double submissions and polling override
 
 const TRIVIA_QUESTIONS = [
     { q: "پایتخت ایران کجاست؟", opts: ["تهران", "شیراز", "اصفهان", "مشهد"], ans: 0 },
@@ -246,11 +276,12 @@ const GAMES = [
     { id: 'reaction:pattern', name: 'الگوی تصویری', icon: 'pattern', desc: 'شناخت الگوهای بصری' },
     { id: 'reaction:odd_one_out', name: 'پیدا کن متفاوت را', icon: 'eye', desc: 'بهبود تفکیک جزئیات' },
     { id: 'reaction:morse_code', name: 'کد مورس', icon: 'radio', desc: 'رمزگشایی و شنیداری' },
-    { id: 'reaction:stroop', name: 'تست استروپ', icon: 'paintbrush', desc: 'کنترل بازداخت شناختی' },
+    { id: 'reaction:stroop', name: 'تست استروپ', icon: 'paintbrush', desc: 'کنترل بازداشت شناختی' },
     { id: 'reaction:schulte', name: 'جدول شولته', icon: 'table', desc: 'گسترش میدان دید' },
     { id: 'reaction:simon', name: 'بازی سیمون', icon: 'music', desc: 'تقویت حافظه توالی‌دار' }
 ];
 
+// --- Utility Functions ---
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
 function showAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
 function hideAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
@@ -260,11 +291,24 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function toggleBotMode() {
     isBotMode = !isBotMode;
     const btn = document.getElementById('bot-toggle');
-    if(isBotMode) { btn.innerHTML = '<i data-lucide="users" class="w-5 h-5"></i> بازی آنلاین'; btn.classList.remove('btn-brand'); btn.classList.add('btn-danger'); }
-    else { btn.innerHTML = '<i data-lucide="bot" class="w-5 h-5"></i> بازی با بات'; btn.classList.remove('btn-danger'); btn.classList.add('btn-brand'); }
+    const teamSizeSelect = document.getElementById('team-size');
+    const botDiffSelect = document.getElementById('bot-difficulty');
+    
+    if(isBotMode) {
+        btn.innerHTML = '<i data-lucide="users" class="w-5 h-5"></i> بازی آنلاین';
+        btn.classList.remove('btn-brand'); btn.classList.add('btn-danger');
+        teamSizeSelect.classList.add('hidden');
+        botDiffSelect.classList.remove('hidden');
+    } else {
+        btn.innerHTML = '<i data-lucide="bot" class="w-5 h-5"></i> بازی با بات';
+        btn.classList.remove('btn-danger'); btn.classList.add('btn-brand');
+        teamSizeSelect.classList.remove('hidden');
+        botDiffSelect.classList.add('hidden');
+    }
     lucide.createIcons();
 }
 
+// --- Auth & DB ---
 async function doAuth() {
     const u = document.getElementById('auth-username').value.trim();
     const p = document.getElementById('auth-password').value;
@@ -328,10 +372,7 @@ function updateNav() {
 function setTheme(themeName, btn) {
     document.body.className = 'theme-' + themeName;
     let user = dbData.users.find(u => u.username === currentUser);
-    if(user) {
-        user.theme = themeName;
-        saveDb();
-    }
+    if(user) { user.theme = themeName; saveDb(); }
     if(btn) {
         document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -350,6 +391,7 @@ function renderGames() {
     lucide.createIcons();
 }
 
+// --- Social Logic ---
 function startSocialPolling() {
     socialPolling = setInterval(async () => {
         await fetchDb();
@@ -454,8 +496,10 @@ async function challengeFriend(friend) {
     showToast(`چالش برای ${friend} ارسال شد!`);
 }
 
+// --- Matchmaking ---
 async function findMatch(gameId) {
     if(isBotMode) return startBotMatch(gameId);
+    
     const teamSize = document.getElementById('team-size').value;
     openModal('lobby-modal');
     document.getElementById('lobby-info').textContent = `بازی: ${GAMES.find(g=>g.id===gameId).name} | حالت: ${teamSize}vs${teamSize}`;
@@ -493,7 +537,7 @@ async function startMatch(match) {
     
     renderMatchUI(match);
     pollingInterval = setInterval(async () => {
-        if(isSubmitting) return; // اگر در حال ارسال جواب هستیم، پولینگ متوقف میشود تا باگ پیش نیاید
+        if(isSubmitting) return; // Pause polling if user is submitting an answer
         await fetchDb();
         let m = dbData.matches.find(x => x.id === currentMatchId);
         if(m) renderMatchUI(m);
@@ -501,14 +545,31 @@ async function startMatch(match) {
     }, 1000);
 }
 
+// --- Bot Logic with Difficulty ---
 function startBotMatch(gameId) {
     clearTimeout(botTimer);
-    localBotMatch = { id: 'bot_match', gameType: gameId, players: [currentUser, 'NeoBot'], state: { scores: { [currentUser]: 0, 'NeoBot': 0 }, turn: currentUser, data: {}, winner: null, startTime: null, finished: false } };
+    const difficulty = document.getElementById('bot-difficulty').value;
+    localBotMatch = { 
+        id: 'bot_match', 
+        gameType: gameId, 
+        players: [currentUser, 'NeoBot'], 
+        state: { scores: { [currentUser]: 0, 'NeoBot': 0 }, turn: currentUser, data: {}, winner: null, startTime: null, finished: false },
+        difficulty: difficulty
+    };
+    
     const baseGame = gameId.split(':')[0];
     if(baseGame === 'math_battle') initMathBot();
     else if(baseGame === 'tictactoe') { localBotMatch.state.data = { board: ["","","","","","","","",""] }; localBotMatch.state.symbols = { [currentUser]: "X", "NeoBot": "O" }; }
     else if(baseGame === 'typing') { const texts = ["learning is the key", "practice makes perfect", "cognitive training"]; localBotMatch.state.data = { targetText: texts[Math.floor(Math.random()*texts.length)], finished: {} }; }
-    else if(baseGame === 'reaction') { localBotMatch.state.startTime = Date.now() + Math.floor(Math.random() * 4000) + 2000; botTimer = setTimeout(() => { if(localBotMatch && !localBotMatch.state.winner) { localBotMatch.state.winner = 'NeoBot'; renderMatchUI(localBotMatch); } }, localBotMatch.state.startTime - Date.now() + 800); }
+    else if(baseGame === 'reaction') { 
+        localBotMatch.state.startTime = Date.now() + Math.floor(Math.random() * 4000) + 2000; 
+        let botReactTime = 3000; // Easy
+        if(difficulty === 'medium') botReactTime = 1500;
+        if(difficulty === 'hard') botReactTime = 600;
+        botTimer = setTimeout(() => { 
+            if(localBotMatch && !localBotMatch.state.winner) { localBotMatch.state.winner = 'NeoBot'; renderMatchUI(localBotMatch); } 
+        }, localBotMatch.state.startTime - Date.now() + botReactTime); 
+    }
     
     currentMatchId = 'bot_match';
     openModal('match-modal');
@@ -524,12 +585,38 @@ function triggerBotMove() {
     clearTimeout(botTimer);
     const m = localBotMatch;
     if(!m || m.state.winner) return;
+    
+    let delay = 2500; let errorChance = 0.4; // Easy defaults
+    if(m.difficulty === 'medium') { delay = 1500; errorChance = 0.15; }
+    if(m.difficulty === 'hard') { delay = 800; errorChance = 0.02; }
+    
     botTimer = setTimeout(() => {
         const baseGame = m.gameType.split(':')[0];
-        if(baseGame === 'math_battle') { let val = m.state.data.currentAnswer; if(Math.random() > 0.7) val += 2; applyLocalAction('NeoBot', 'answer', val); }
-        else if(baseGame === 'tictactoe') { let empty = m.state.data.board.map((c, i) => c === "" ? i : null).filter(i => i !== null); if(empty.length > 0) applyLocalAction('NeoBot', 'place', empty[Math.floor(Math.random() * empty.length)]); }
+        if(baseGame === 'math_battle') { 
+            let val = m.state.data.currentAnswer; 
+            if(Math.random() < errorChance) val += Math.floor(Math.random()*5)+1; // Bot makes mistake
+            applyLocalAction('NeoBot', 'answer', val); 
+        }
+        else if(baseGame === 'tictactoe') { 
+            let empty = m.state.data.board.map((c, i) => c === "" ? i : null).filter(i => i !== null); 
+            if(empty.length > 0) {
+                // Hard mode bot tries to block or win (very basic logic)
+                let bestMove = empty[Math.floor(Math.random() * empty.length)];
+                if(m.difficulty === 'hard') {
+                    // Simple block logic
+                    const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+                    for(let p of winPatterns) {
+                        let cells = p.map(i => m.state.data.board[i]);
+                        if(cells.filter(c => c === "X").length === 2 && cells.includes("")) {
+                            bestMove = p[cells.indexOf("")]; break;
+                        }
+                    }
+                }
+                applyLocalAction('NeoBot', 'place', bestMove); 
+            }
+        }
         else if(baseGame === 'typing') applyLocalAction('NeoBot', 'finish', m.state.data.targetText);
-    }, 1500 + Math.random() * 1000);
+    }, delay);
 }
 
 function applyLocalAction(username, action, value) {
@@ -570,6 +657,7 @@ async function finishBotMatch(m) {
     }
 }
 
+// --- Match UI Renderer ---
 async function renderMatchUI(match) {
     const isBot = match.id === 'bot_match';
     const userScore = match.state.scores[currentUser] || 0;
@@ -595,16 +683,16 @@ async function renderMatchUI(match) {
     
     if(baseGame === 'math_battle') {
         if(match.state.turn === currentUser) {
-            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">نوبت شماست!</p><div dir="ltr" class="text-5xl font-bold mb-6 bg-slate-800/50 px-8 py-4 rounded-xl" style="color: var(--brand-color);">${match.state.data.question} = ?</div><input type="number" id="math-answer" placeholder="جواب" class="w-32 text-center text-2xl font-bold mb-4" onkeydown="if(event.key==='Enter')submitMath()"><button onclick="submitMath()" class="btn-brand px-6 py-2 rounded-lg font-bold">ارسال</button>`;
-            document.getElementById('math-answer').focus();
+            content.innerHTML = `<p class="mb-4 text-lg text-emerald-400 font-bold">نوبت شماست!</p><div dir="ltr" class="math-question text-5xl font-bold mb-6 bg-slate-800/50 px-8 py-4 rounded-xl" style="color: var(--brand-color);">${match.state.data.question} = ?</div><input type="number" id="math-answer" placeholder="جواب" class="w-32 text-center text-2xl font-bold mb-4" onkeydown="if(event.key==='Enter')submitMath()"><button onclick="submitMath()" class="btn-brand px-6 py-2 rounded-lg font-bold">ارسال</button>`;
+            if(!isSubmitting) document.getElementById('math-answer').focus();
         } else { content.innerHTML = `<p class="text-slate-400 text-lg">در انتظار حریف...</p><div class="animate-spin mt-4"><i data-lucide="loader-2"></i></div>`; }
     } else if(baseGame === 'tictactoe') {
         const mySymbol = match.state.symbols[currentUser];
         const isMyTurn = match.state.turn === currentUser;
         content.innerHTML = `<p class="mb-4 text-sm ${isMyTurn ? 'text-emerald-400' : 'text-slate-400'}">شما (<b>${mySymbol}</b>) | ${isMyTurn ? 'نوبت شماست' : 'نوبت حریف'}</p><div class="grid grid-cols-3 gap-2 w-64">${match.state.data.board.map((cell, i) => `<div onclick="${isMyTurn ? `placeTTT(${i})` : ''}" class="ttt-cell h-20 bg-slate-800 rounded-lg flex items-center justify-center text-4xl font-bold ${cell === 'X' ? 'text-emerald-400' : 'text-rose-400'} cursor-pointer">${cell}</div>`).join('')}</div>`;
     } else if(baseGame === 'typing') {
-        content.innerHTML = `<p class="mb-4 text-sm text-slate-400">متن زیر را سریع تایپ کنید:</p><div dir="ltr" class="bg-slate-800 p-4 rounded-lg mb-4 text-lg font-bold text-amber-400">${match.state.data.targetText}</div><input type="text" id="typing-input" placeholder="اینجا تایپ کنید..." class="w-full max-w-md mb-4 text-center"><button onclick="submitTyping()" class="btn-brand px-6 py-2 rounded-lg font-bold">اتمام تایپ</button>`;
-        document.getElementById('typing-input').focus();
+        content.innerHTML = `<p class="mb-4 text-sm text-slate-400">متن زیر را سریع تایپ کنید:</p><div dir="ltr" class="typing-target bg-slate-800 p-4 rounded-lg mb-4 text-lg font-bold text-amber-400">${match.state.data.targetText}</div><input type="text" id="typing-input" placeholder="اینجا تایپ کنید..." class="w-full max-w-md mb-4 text-center" oninput="checkTypingLive(this, '${match.state.data.targetText}')" onkeydown="if(event.key==='Enter')submitTyping()"><button onclick="submitTyping()" class="btn-brand px-6 py-2 rounded-lg font-bold">اتمام تایپ</button>`;
+        if(!isSubmitting) document.getElementById('typing-input').focus();
     } else if(baseGame === 'reaction') {
         if(!isBot && !match.state.startTime && match.state.turn === currentUser) fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'init' }) });
         if(!match.state.startTime) content.innerHTML = `<div class="w-32 h-32 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-xl">آماده باش...</div>`;
@@ -618,21 +706,49 @@ async function renderMatchUI(match) {
     lucide.createIcons();
 }
 
+// Live typing checker for visual feedback
+function checkTypingLive(input, target) {
+    const val = input.value;
+    let html = '';
+    for(let i=0; i<target.length; i++) {
+        if(i < val.length) {
+            if(val[i] === target[i]) html += `<span class="typing-correct">${target[i]}</span>`;
+            else html += `<span class="typing-incorrect">${target[i]}</span>`;
+        } else {
+            html += target[i];
+        }
+    }
+    document.querySelector('.typing-target').innerHTML = html;
+}
+
+// --- Optimistic Action Submitters ---
 async function submitMath() {
     if(isSubmitting) return;
     const input = document.getElementById('math-answer');
     const val = parseInt(input.value);
     if(isNaN(val)) return;
-    isSubmitting = true;
-    input.disabled = true;
     
-    if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'answer', val); isSubmitting = false; return; }
+    isSubmitting = true;
+    input.disabled = true; // Lock input immediately
+    
+    if(currentMatchId === 'bot_match') {
+        applyLocalAction(currentUser, 'answer', val);
+        isSubmitting = false;
+        return;
+    }
+    
+    // Optimistic UI: Switch turn immediately to prevent input clearing bug
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match) {
+        match.state.turn = match.players.find(p => p !== currentUser);
+        renderMatchUI(match); // Shows "Waiting for opponent..."
+    }
     
     const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer', value: val }) });
     const data = await res.json();
     if(data.match) {
-        let index = dbData.matches.findIndex(m => m.id === data.match.id);
-        if(index !== -1) dbData.matches[index] = data.match;
+        let i = dbData.matches.findIndex(m => m.id === data.match.id);
+        if(i !== -1) dbData.matches[i] = data.match;
         renderMatchUI(data.match);
     }
     isSubmitting = false;
@@ -644,12 +760,19 @@ async function placeTTT(index) {
     
     if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'place', index); isSubmitting = false; return; }
     
-    const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
-    const data = await res.json();
-    if(data.match) {
-        let i = dbData.matches.findIndex(m => m.id === data.match.id);
-        if(i !== -1) dbData.matches[i] = data.match;
-        renderMatchUI(data.match);
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match && match.state.turn === currentUser && match.state.data.board[index] === "") {
+        match.state.data.board[index] = match.state.symbols[currentUser];
+        match.state.turn = match.players.find(p => p !== currentUser);
+        renderMatchUI(match);
+        
+        const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'place', value: index }) });
+        const data = await res.json();
+        if(data.match) {
+            let i = dbData.matches.findIndex(m => m.id === data.match.id);
+            if(i !== -1) dbData.matches[i] = data.match;
+            renderMatchUI(data.match);
+        }
     }
     isSubmitting = false;
 }
@@ -660,6 +783,12 @@ async function submitTyping() {
     isSubmitting = true;
     
     if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'finish', val); isSubmitting = false; return; }
+    
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match) {
+        match.state.turn = match.players.find(p => p !== currentUser);
+        renderMatchUI(match);
+    }
     
     const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'finish', value: val }) });
     const data = await res.json();
@@ -677,14 +806,10 @@ async function reactionClick() {
     
     if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'click', null); isSubmitting = false; return; }
     
-    const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
-    const data = await res.json();
-    if(data.match) {
-        let i = dbData.matches.findIndex(m => m.id === data.match.id);
-        if(i !== -1) dbData.matches[i] = data.match;
-        renderMatchUI(data.match);
-    }
-    isSubmitting = false;
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match) { match.state.winner = currentUser; renderMatchUI(match); }
+    
+    await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'click' }) });
 }
 
 async function submitTrivia(optionIndex) {
@@ -692,6 +817,12 @@ async function submitTrivia(optionIndex) {
     isSubmitting = true;
     
     if(currentMatchId === 'bot_match') { applyLocalAction(currentUser, 'answer_trivia', optionIndex); isSubmitting = false; return; }
+    
+    const match = dbData.matches.find(m => m.id === currentMatchId);
+    if(match) {
+        match.state.turn = match.players.find(p => p !== currentUser);
+        renderMatchUI(match);
+    }
     
     const res = await fetch('/api/match/action', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: currentUser, matchId: currentMatchId, action: 'answer_trivia', value: optionIndex }) });
     const data = await res.json();
@@ -716,6 +847,7 @@ async function leaveMatch() {
     endMatch();
 }
 
+// --- Profile Logic ---
 function renderProfile() {
     const user = dbData.users.find(u => u.username === currentUser);
     if(!user) return;
@@ -731,10 +863,15 @@ function renderProfile() {
     }).join('') || '<p class="text-slate-400 text-center py-4">سابقه بازی وجود ندارد</p>';
     document.getElementById('p-history').innerHTML = historyHtml;
     
-    // آپدیت دکمه تم فعال
+    // Update active theme button
     document.querySelectorAll('.theme-btn').forEach(b => {
-        b.classList.toggle('active', b.style.background.includes(user.theme === 'default' ? '99, 102, 241' : ''))
+        b.classList.remove('active');
     });
+    if(user.theme === 'default') document.querySelector('.theme-btn[style*="99, 102, 241"]')?.classList.add('active');
+    else if(user.theme === 'emerald') document.querySelector('.theme-btn[style*="16, 185, 129"]')?.classList.add('active');
+    else if(user.theme === 'rose') document.querySelector('.theme-btn[style*="244, 63, 94"]')?.classList.add('active');
+    else if(user.theme === 'amber') document.querySelector('.theme-btn[style*="245, 158, 11"]')?.classList.add('active');
+    
     lucide.createIcons();
 }
 
